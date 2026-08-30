@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ims_password
       POSTGRES_DB: ims_db
     ports:
-      - "5432:5432"
+      - "54321:5432"
     volumes:
       - ims_pg_data:/var/lib/postgresql/data
 
