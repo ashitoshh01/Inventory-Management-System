@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft } from "lucide-react";
 import { ProductInput } from "@/lib/validators/product.schema";
+import { AdjustStockDialog } from "@/components/stock/adjust-stock-dialog";
 
 export default function ProductFormPage({ params }: { params: { id: string } }) {
   const isNew = params.id === "new";
@@ -312,6 +313,15 @@ export default function ProductFormPage({ params }: { params: { id: string } }) 
         <h1 className="text-3xl font-bold tracking-tight">
           {isNew ? "Create Product" : "Edit Product"}
         </h1>
+        {!isNew && existingProduct && (
+          <div className="ml-auto">
+            <AdjustStockDialog 
+              productId={existingProduct.id} 
+              productName={existingProduct.name} 
+              warehouses={warehouses}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex border-b mb-6 gap-6">

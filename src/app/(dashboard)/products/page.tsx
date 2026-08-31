@@ -89,12 +89,12 @@ export default function ProductsPage() {
               <Printer className="w-4 h-4 mr-2" /> Print {selectedIds.length} Label{selectedIds.length > 1 ? 's' : ''}
             </Button>
           )}
-          <Button variant="outline" asChild>
-            <Link href="/products/import">Import</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/products/new"><Plus className="w-4 h-4 mr-2" /> Add Product</Link>
-          </Button>
+          <Link href="/products/import">
+            <Button variant="outline">Import</Button>
+          </Link>
+          <Link href="/products/new">
+            <Button><Plus className="w-4 h-4 mr-2" /> Add Product</Button>
+          </Link>
         </div>
       </div>
 
@@ -217,9 +217,11 @@ export default function ProductsPage() {
                       }} title="Print Label">
                         <Printer className="w-4 h-4 text-blue-500" />
                       </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/products/${product.id}`}><Edit2 className="w-4 h-4" /></Link>
-                      </Button>
+                      <Link href={`/products/${product.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </Link>
                       <Button variant="ghost" size="sm" onClick={() => {
                         if (confirm('Are you sure you want to delete this product?')) {
                           deleteMutation.mutate(product.id);

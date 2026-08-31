@@ -9,7 +9,7 @@ const PERMISSIONS: Record<Role, Record<string, string[]>> = {
   MANAGER: {
     products: ['read', 'create', 'update', 'delete'],
     warehouses: ['read', 'create', 'update', 'delete'],
-    stock: ['read', 'create', 'update', 'delete'],
+    stock: ['read', 'create', 'update', 'delete', 'adjust'],
     purchasing: ['read', 'create', 'update', 'delete'],
     sales: ['read', 'create', 'update', 'delete'],
     pos: ['read', 'create', 'update', 'delete'],
