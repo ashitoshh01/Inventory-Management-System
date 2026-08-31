@@ -17,6 +17,8 @@ import {
   Menu,
   X,
   Truck,
+  CheckSquare,
+  Lightbulb,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -25,6 +27,8 @@ const NAV_ITEMS = [
   { name: "Warehouses", href: "/warehouses", icon: Warehouse },
   { name: "Stock", href: "/stock", icon: Boxes },
   { name: "Purchasing", href: "/purchasing", icon: ShoppingCart },
+  { name: "Suggested POs", href: "/purchasing/suggestions", icon: Lightbulb },
+  { name: "PO Approvals", href: "/purchasing/approvals", icon: CheckSquare },
   { name: "Suppliers", href: "/suppliers", icon: Truck },
   { name: "Sales", href: "/sales", icon: Receipt },
   { name: "POS", href: "/pos", icon: Store },
@@ -64,7 +68,12 @@ export default function SidebarClient({ userName, userRole }: SidebarClientProps
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map(item => {
+        {NAV_ITEMS.filter(item => {
+          if (item.name === "PO Approvals") {
+            return userRole === "ADMIN" || userRole === "MANAGER";
+          }
+          return true;
+        }).map(item => {
           const Icon = item.icon
           const active = isActive(item.href)
           return (

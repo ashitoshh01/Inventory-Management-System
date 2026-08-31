@@ -241,6 +241,7 @@ model PurchaseOrder {
   createdById String
   createdBy   User                @relation(fields: [createdById], references: [id])
   expectedDate DateTime?
+  rejectionReason String?
   createdAt   DateTime            @default(now())
 
   items PurchaseOrderItem[]

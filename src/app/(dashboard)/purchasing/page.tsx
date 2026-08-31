@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, CheckCircle } from "lucide-react";
+import { Plus, CheckCircle, PackageOpen, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 export default function PurchasingPage() {
@@ -83,22 +83,48 @@ export default function PurchasingPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {po.status === 'DRAFT' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-xs h-8"
-                        onClick={() => {
-                          if(confirm('Submit this PO for approval?')) {
-                            submitMutation.mutate(po.id);
-                          }
-                        }}
-                        disabled={submitMutation.isPending}
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Submit for Approval
-                      </Button>
-                    )}
+                    <div className="flex gap-2 items-center">
+                      {po.status === 'DRAFT' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-8"
+                          onClick={() => {
+                            if(confirm('Submit this PO for approval?')) {
+                              submitMutation.mutate(po.id);
+                            }
+                          }}
+                          disabled={submitMutation.isPending}
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Submit
+                        </Button>
+                      )}
+                      {(po.status === 'APPROVED' || po.status === 'PARTIALLY_RECEIVED') && (
+                        <Link href={`/purchasing/${po.id}/receive`}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <PackageOpen className="w-3 h-3 mr-1" />
+                            Receive
+                          </Button>
+                        </Link>
+                      )}
+                      {(po.status === 'RECEIVED' || po.status === 'PARTIALLY_RECEIVED') && (
+                        <Link href={`/purchasing/${po.id}/return`}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8 text-orange-600 border-orange-200 hover:bg-orange-50"
+                          >
+                            <Undo2 className="w-3 h-3 mr-1" />
+                            Return
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

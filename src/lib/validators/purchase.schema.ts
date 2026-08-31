@@ -15,3 +15,29 @@ export const purchaseOrderSchema = z.object({
 
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
 export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema>;
+
+export const receiveGoodsLineSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  newReceivedQty: z.number().int().min(0),
+  batchNumber: z.string().optional().nullable(),
+  expiryDate: z.string().optional().nullable(),
+});
+
+export const receiveGoodsSchema = z.object({
+  lines: z.array(receiveGoodsLineSchema),
+});
+
+export type ReceiveGoodsInput = z.infer<typeof receiveGoodsSchema>;
+
+export const returnGoodsLineSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  returnQty: z.number().int().min(0),
+});
+
+export const returnGoodsSchema = z.object({
+  lines: z.array(returnGoodsLineSchema),
+});
+
+export type ReturnGoodsInput = z.infer<typeof returnGoodsSchema>;

@@ -3,10 +3,15 @@ import { auth } from '@/lib/auth';
 import { PurchaseService } from '@/services/purchase.service';
 import { purchaseOrderSchema } from '@/lib/validators/purchase.schema';
 
-export async function GET() {
+import { PurchaseOrderStatus } from '@prisma/client';
+
+export async function GET(req: Request) {
   try {
     const session = await auth();
-    const pos = await PurchaseService.getPurchaseOrders(session);
+    const url = new URL(req.url);
+    const status = url.searchParams.get('status') as PurchaseOrderStatus | undefined;
+    
+    const pos = await PurchaseService.getPurchaseOrders(session, status);
     return NextResponse.json(pos);
   } catch (e: unknown) {
     const error = e as { message?: string, name?: string, errors?: unknown };

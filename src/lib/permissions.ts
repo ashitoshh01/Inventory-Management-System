@@ -10,7 +10,7 @@ const PERMISSIONS: Record<Role, Record<string, string[]>> = {
     products: ['read', 'create', 'update', 'delete'],
     warehouses: ['read', 'create', 'update', 'delete'],
     stock: ['read', 'create', 'update', 'delete', 'adjust'],
-    purchasing: ['read', 'create', 'update', 'delete'],
+    purchasing: ['read', 'create', 'update', 'delete', 'approve'],
     sales: ['read', 'create', 'update', 'delete'],
     pos: ['read', 'create', 'update', 'delete'],
     reports: ['read'],
