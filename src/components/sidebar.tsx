@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  Truck,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { name: "Warehouses", href: "/warehouses", icon: Warehouse },
   { name: "Stock", href: "/stock", icon: Boxes },
   { name: "Purchasing", href: "/purchasing", icon: ShoppingCart },
+  { name: "Suppliers", href: "/suppliers", icon: Truck },
   { name: "Sales", href: "/sales", icon: Receipt },
   { name: "POS", href: "/pos", icon: Store },
   { name: "Reports", href: "/reports", icon: LineChart },
