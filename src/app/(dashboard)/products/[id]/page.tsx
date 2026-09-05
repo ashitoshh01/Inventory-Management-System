@@ -51,6 +51,7 @@ export default function ProductFormPage({ params }: { params: { id: string } }) 
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },
+    enabled: formData.isBundle,
   });
   const allProducts = allProductsData?.data || [];
 
@@ -132,7 +133,8 @@ export default function ProductFormPage({ params }: { params: { id: string } }) 
     queryFn: async () => {
       const res = await fetch("/api/warehouses");
       return res.ok ? res.json() : [];
-    }
+    },
+    enabled: !isNew,
   });
 
   const batchMutation = useMutation({
