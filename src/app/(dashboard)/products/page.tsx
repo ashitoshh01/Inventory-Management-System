@@ -55,7 +55,9 @@ export default function ProductsPage() {
         throw new Error(err.error || "Failed to delete");
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
     onError: (err: Error) => alert(err.message),
   });
 

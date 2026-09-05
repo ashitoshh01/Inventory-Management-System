@@ -26,7 +26,9 @@ export default function PurchasingPage() {
         throw new Error(err.error || "Failed to submit");
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchases"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["purchases"] });
+    },
     onError: (err: Error) => alert(err.message),
   });
 

@@ -72,7 +72,9 @@ export default function CategoriesPage() {
         throw new Error(err.error || "Failed to delete");
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
     onError: (err: Error) => alert(err.message),
   });
 

@@ -31,7 +31,9 @@ export default function POApprovalsPage() {
         throw new Error(err.error || "Failed to approve");
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchases"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["purchases"] });
+    },
     onError: (err: Error) => alert(err.message),
   });
 

@@ -81,7 +81,9 @@ export default function SuppliersPage() {
         throw new Error(err.error || "Failed to delete");
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+    },
     onError: (err: Error) => alert(err.message),
   });
 
