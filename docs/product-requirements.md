@@ -16,6 +16,7 @@ Suggested roles:
 Use permissions rather than hard-coding role names throughout the code.
 
 Example permissions:
+
 - `products.read`
 - `products.write`
 - `inventory.read`
@@ -71,6 +72,7 @@ Example permissions:
 ## Product
 
 Product should support:
+
 - SKU;
 - barcode(s);
 - name;
@@ -92,6 +94,7 @@ Do not assume one product always equals one physical stock unit. Use variants/SK
 ## Inventory
 
 Inventory must support:
+
 - multiple warehouses;
 - warehouse locations;
 - on-hand;
@@ -146,6 +149,7 @@ Stock must be reserved/deducted according to the chosen sales policy. Document t
 ## Returns
 
 Returns need:
+
 - original sale reference where available;
 - returned quantity;
 - condition;
@@ -171,6 +175,7 @@ A transfer must not accidentally create stock from nothing.
 ## Expiry
 
 For tracked products:
+
 - batch number;
 - manufacture date when available;
 - expiry date;
@@ -179,6 +184,7 @@ For tracked products:
 - location.
 
 Use scheduled jobs for:
+
 - expiring soon;
 - expired;
 - low-stock notifications.
@@ -188,6 +194,7 @@ Notifications must be deduplicated.
 ## Dashboard
 
 The supplied design suggests:
+
 - total inventory value;
 - total products;
 - low-stock items;
@@ -205,6 +212,7 @@ Dashboard numbers must come from real queries/aggregates. Never calculate author
 ## Search
 
 Global search can cover:
+
 - SKU;
 - barcode;
 - product name;
@@ -218,6 +226,7 @@ Use debouncing in the UI and indexed queries in PostgreSQL.
 ## Import/export
 
 Imports:
+
 - validate headers;
 - validate every row;
 - show a dry-run preview;
@@ -226,6 +235,7 @@ Imports:
 - use an import job for large files.
 
 Exports:
+
 - permission-protected;
 - asynchronous for large result sets;
 - expiring download URL;

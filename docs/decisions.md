@@ -5,6 +5,7 @@ Use this file only for short-lived project decisions that do not warrant a full 
 Long-lived architecture decisions belong in `docs/adr/`.
 
 Current assumptions:
+
 - initial scale: ~100 concurrent active users;
 - modular monolith;
 - PostgreSQL authoritative;

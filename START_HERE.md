@@ -5,6 +5,7 @@ This document is the primary onboarding guide and AI-agent context pack for the 
 ---
 
 ## Authoritative Architecture Overview
+
 - **Pattern**: Decoupled Modular Monolith
 - **Monorepo**: pnpm workspaces + Turborepo
 - **Frontend (`apps/web`)**: Next.js 16.x Active LTS + React 19.x + Tailwind CSS
@@ -47,6 +48,7 @@ Before planning or executing any task, read these documents in sequence:
 ## Specialized Skill Directory
 
 Before executing a task in any specific discipline, inspect and apply its corresponding skill:
+
 - Architecture: `.claude/skills/architecture/SKILL.md`
 - Frontend: `.claude/skills/frontend/SKILL.md`
 - Backend: `.claude/skills/backend/SKILL.md`
@@ -66,6 +68,7 @@ Before executing a task in any specific discipline, inspect and apply its corres
 ## How to Prompt and Execute Work
 
 Before implementing any feature:
+
 1. Use the template in [docs/agent-task-template.md](file:///home/ashu/Desktop/Inventory-Management/docs/agent-task-template.md).
 2. Adhere strictly to the phase progression in [docs/IMPLEMENTATION_ORDER.md](file:///home/ashu/Desktop/Inventory-Management/docs/IMPLEMENTATION_ORDER.md).
 3. Do not jump ahead to UI or reporting before the database and domain models are proven with automated integration tests.

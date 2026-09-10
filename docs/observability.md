@@ -5,6 +5,7 @@
 Use structured JSON logs in production.
 
 Required fields:
+
 - timestamp
 - level
 - service
@@ -17,6 +18,7 @@ Required fields:
 - durationMs
 
 Business events should include:
+
 - event name;
 - resource ID;
 - outcome.
@@ -26,6 +28,7 @@ Do not log secrets or raw sensitive request bodies.
 ## Metrics
 
 Track:
+
 - request count;
 - error count;
 - p50/p95/p99 latency;
@@ -39,6 +42,7 @@ Track:
 - export duration.
 
 Business metrics:
+
 - stock adjustments;
 - stock transfers;
 - sales;
@@ -49,6 +53,7 @@ Business metrics:
 ## Tracing
 
 Add traces around:
+
 - HTTP request;
 - DB queries for slow paths;
 - external provider calls;
@@ -59,6 +64,7 @@ Propagate request/correlation IDs.
 ## Alerts
 
 Start with:
+
 - high 5xx rate;
 - sustained latency;
 - DB unavailable;

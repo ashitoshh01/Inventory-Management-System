@@ -9,6 +9,7 @@ The initial production target is approximately **100 concurrent active users**. 
 ## Read these files first
 
 For any non-trivial task:
+
 1. `docs/ENGINEERING_RULES.md` — non-negotiable invariant rules
 2. `docs/IMPLEMENTATION_ORDER.md` — authoritative phase sequence
 3. `docs/DEFINITION_OF_DONE.md` — phase completion gates
@@ -55,6 +56,7 @@ Do not replace these technologies without an approved ADR.
 ### Stock is money-like critical data
 
 A stock mutation must:
+
 1. validate actor permissions;
 2. validate the product/variant, warehouse, and unit;
 3. start a database transaction;
@@ -67,6 +69,7 @@ A stock mutation must:
 10. commit atomically.
 
 Never:
+
 - decrement stock in the client;
 - trust a client-provided current balance;
 - update stock with a read-then-write race;
@@ -76,6 +79,7 @@ Never:
 ### Idempotency
 
 Any endpoint that can be retried and cause a business mutation should support an idempotency key, especially:
+
 - receive purchase order
 - create sale
 - stock adjustment
@@ -138,6 +142,7 @@ Persist the idempotency key with the operation result.
 A change is not complete when it merely compiles.
 
 Minimum expectations:
+
 - unit tests for non-trivial business rules;
 - integration tests for database transactions;
 - authorization tests for protected endpoints;
@@ -145,6 +150,7 @@ Minimum expectations:
 - E2E tests for critical flows.
 
 Critical flows:
+
 - login/logout
 - create product
 - receive stock
@@ -160,6 +166,7 @@ Critical flows:
 ## Performance target
 
 Design and test for:
+
 - ~100 concurrent active users
 - normal API p95 < 500 ms
 - common reads ideally < 200 ms
@@ -174,7 +181,9 @@ These are engineering targets, not promises. Benchmark before tuning.
 For every task:
 
 ### Step 1 — Understand
+
 Identify:
+
 - user-visible behavior;
 - affected domain;
 - database impact;
@@ -185,26 +194,33 @@ Identify:
 - deployment/migration impact.
 
 ### Step 2 — Plan
+
 Before writing code, produce a short implementation plan. For risky changes, list invariants that must remain true.
 
 ### Step 3 — Inspect
+
 Read existing code and reuse established patterns. Do not create a second implementation of an existing capability.
 
 ### Step 4 — Implement
+
 Make the smallest coherent change. Keep types strict. Avoid unrelated refactors.
 
 ### Step 5 — Verify
+
 Run relevant lint/typecheck/unit/integration/E2E checks.
 
 ### Step 6 — Review
+
 Check security, race conditions, transaction boundaries, authorization, error handling, observability, and performance.
 
 ### Step 7 — Document
+
 Update docs/ADR/API/schema comments when behavior changed.
 
 ## Definition of done
 
 A feature is done only if:
+
 - behavior works;
 - unauthorized users cannot perform it;
 - data invariants are protected;
@@ -233,6 +249,7 @@ A feature is done only if:
 ## When uncertain
 
 Prefer:
+
 1. existing project conventions;
 2. explicit domain invariants;
 3. database constraints;

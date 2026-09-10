@@ -1,6 +1,7 @@
 # ADR 0003 — Idempotent Business Mutations
 
 ## Status
+
 Accepted
 
 ## Decision
@@ -8,6 +9,7 @@ Accepted
 Mutation endpoints that may be retried support idempotency keys.
 
 The server stores:
+
 - actor;
 - organization;
 - endpoint/operation;

@@ -3,6 +3,7 @@
 ## Visual direction
 
 The supplied references establish:
+
 - light content canvas;
 - deep navy sidebar;
 - blue/indigo primary accent;
@@ -18,6 +19,7 @@ The UI should feel like a professional business application, not a marketing lan
 ## Layout
 
 Desktop:
+
 - fixed/collapsible sidebar;
 - top utility bar;
 - page title + context;
@@ -25,6 +27,7 @@ Desktop:
 - content cards/tables.
 
 Mobile:
+
 - sidebar becomes drawer;
 - tables become horizontally scrollable or card-based where appropriate;
 - primary action remains easy to reach;
@@ -33,6 +36,7 @@ Mobile:
 ## Design tokens
 
 Centralize:
+
 - colors;
 - spacing;
 - radius;
@@ -46,6 +50,7 @@ Do not scatter arbitrary values throughout components.
 ## Components
 
 Create reusable primitives:
+
 - Button
 - Input
 - Select
@@ -69,6 +74,7 @@ Create reusable primitives:
 ## Tables
 
 Every important table should consider:
+
 - server-side pagination;
 - search;
 - filters;
@@ -86,6 +92,7 @@ Do not load thousands of rows just to paginate them in the browser.
 ## Forms
 
 Use:
+
 - field-level validation;
 - server error mapping;
 - disabled submit during mutation;
@@ -101,6 +108,7 @@ Prefer a dashboard summary endpoint or server-side aggregation strategy.
 ## Accessibility
 
 Minimum:
+
 - semantic HTML;
 - visible focus;
 - keyboard navigation;

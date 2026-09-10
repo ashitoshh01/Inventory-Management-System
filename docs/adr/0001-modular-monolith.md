@@ -1,6 +1,7 @@
 # ADR 0001 — Modular Monolith
 
 ## Status
+
 Accepted
 
 ## Context
@@ -14,6 +15,7 @@ Use a modular monolith with separate Next.js web and NestJS API applications.
 ## Consequences
 
 Positive:
+
 - simple deployment;
 - strong database transactions;
 - easy local development;
@@ -21,6 +23,7 @@ Positive:
 - simpler observability.
 
 Negative:
+
 - one API deployment unit;
 - modules require discipline to avoid coupling;
 - future extraction may require explicit boundaries.
@@ -28,6 +31,7 @@ Negative:
 ## Revisit when
 
 Consider service extraction only when:
+
 - a module has materially different scaling needs;
 - deployment independence is required;
 - reliability isolation is required;

@@ -5,7 +5,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 0.5 — Architecture & Documentation Normalization (Current)
+
 **Goal:** Establish a single, internally consistent architectural truth and AI-agent context across all documentation and skills.
+
 - Normalize documentation to the decoupled modular monolith architecture.
 - Reconcile framework versions to Next.js 16.x Active LTS and React 19.x.
 - Document architectural decisions (ADR 0004 for Next.js, ADR 0005 for `packages/database`).
@@ -15,7 +17,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1A — Monorepo Foundation
+
 **Goal:** Establish the root monorepo tooling, package orchestration, and shared configuration.
+
 - Configure `pnpm-workspace.yaml`, root `package.json`, and `turbo.json`.
 - Scaffold `packages/config` with shared TypeScript (`tsconfig.base.json`), ESLint, and Prettier rules.
 - Scaffold `packages/types` with core domain primitives, DTO contracts, and API response types.
@@ -24,7 +28,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1B — Development Infrastructure
+
 **Goal:** Stand up containerized backing services for local development.
+
 - Create `infra/docker-compose.yml` defining:
   - PostgreSQL 16+ (with healthcheck and persistent volume)
   - Redis 7+ (with healthcheck)
@@ -35,7 +41,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1C — Backend Foundation (`apps/api`)
+
 **Goal:** Scaffold the core NestJS application runtime with global cross-cutting concerns.
+
 - Initialize NestJS in `apps/api` with TypeScript and modular architecture.
 - Configure global HTTP interceptors: correlation ID (`x-request-id`) generation and propagation.
 - Implement structured JSON logging middleware.
@@ -46,7 +54,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1D — Frontend Foundation (`apps/web` & `packages/ui`)
+
 **Goal:** Scaffold the Next.js 16.x Active LTS web application and design system primitives.
+
 - Initialize Next.js 16.x Active LTS with App Router, React 19.x, and Tailwind CSS in `apps/web`.
 - Implement shared UI primitives in `packages/ui` (Button, Input, Card, Modal, Table, Badge, EmptyState).
 - Build the core application layout shell matching design specifications (dark navy sidebar, clean light canvas, header bar, responsive mobile drawer).
@@ -55,7 +65,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1E — Authentication & Tenant Foundation
+
 **Goal:** Implement multi-tenant identity, session security, and server-side RBAC.
+
 - Implement `Organization` multi-tenant scoping and context extraction interceptor in `apps/api`.
 - Implement `User`, `Role`, `Permission`, and `RolePermission` models.
 - Implement password hashing using **Argon2id**.
@@ -66,7 +78,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1F — Core Database & Catalog Domain Foundation
+
 **Goal:** Implement authoritative catalog models, initial database migrations, and catalog APIs.
+
 - Configure `packages/database` with `prisma/schema.prisma`:
   - `Organization`, `User`, `Role`, `Permission`
   - `Warehouse`, `WarehouseLocation`
@@ -81,7 +95,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 1G — Testing & CI Automation
+
 **Goal:** Establish automated verification gates across all packages.
+
 - Configure Vitest for backend and frontend unit tests.
 - Implement database integration tests in `apps/api` verifying transactions, tenant isolation, and IDOR protection against real PostgreSQL.
 - Configure Playwright in `apps/web` and write E2E tests for login and product creation flows.
@@ -90,7 +106,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 2 — Inventory Core
+
 **Goal:** Authoritative, transactional stock management with immutable ledger auditability.
+
 - Implement `StockBalance` and `StockLedgerEntry` persistence routines with row-level locks (`SELECT FOR UPDATE`).
 - Implement stock adjustment workflows (`POST /api/v1/inventory/adjustments`) with mandatory reason codes and idempotency.
 - Implement stock reservation mechanics (`available = on_hand - reserved`).
@@ -101,7 +119,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 3 — Purchasing, Receiving, Sales & Transfers
+
 **Goal:** Full procurement and sales lifecycle with transactional stock deduction.
+
 - **Purchasing**: Supplier CRUD, Purchase Order lifecycle (`DRAFT → SUBMITTED → APPROVED → PARTIALLY_RECEIVED → RECEIVED → CLOSED`), transactional goods receipt increasing stock via ledger.
 - **Sales / POS**: Customer CRUD, Sales Order lifecycle, atomic stock reservation/deduction, invoice generation, fast POS checkout interface.
 - **Returns**: Sales and purchase returns with restock decisions, ledger reversibility, and reason tracking.
@@ -109,7 +129,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 4 — Reports, Analytics & Forecasting
+
 **Goal:** Aggregate transaction data into operational and predictive insight.
+
 - Real-time KPI queries: total inventory valuation, out-of-stock items, fast-moving items.
 - Asynchronous large-scale exports (CSV/Excel) via BullMQ background jobs.
 - Low-stock and batch expiry scheduled scanning jobs.
@@ -118,7 +140,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 5 — Production Hardening
+
 **Goal:** Security, resilience, and performance readiness for 100 concurrent active users.
+
 - Enforce Redis-backed rate limiting on auth, search, mutations, and export endpoints.
 - Add OpenTelemetry tracing and Prometheus metrics exporters.
 - Conduct concurrency benchmark tests (simultaneous stock deductions) and verify zero negative stock.
@@ -128,7 +152,9 @@ This document defines the authoritative, sequential order for developing the Inv
 ---
 
 ## Phase 6 — UI Polish & Optimization
+
 **Goal:** Visual excellence, responsive fluidity, and complete accessibility.
+
 - Micro-interactions, skeleton loading polish, and toast notifications.
 - Complete mobile and tablet responsiveness review for warehouse devices.
 - Keyboard navigation shortcuts (quick search, command palette).

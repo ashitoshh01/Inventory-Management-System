@@ -4,19 +4,23 @@ description: Core domain rules, stock invariant equations, ledger mechanics, and
 ---
 
 # Purpose
+
 Governs the core domain logic of inventory management: stock movements, warehouse balances, reservations, cycle counts, purchase receiving, order fulfillment, and auditability.
 
 # When To Use
+
 - When implementing or modifying features involving stock levels, inventory transfers, adjustments, purchase orders, sales orders, or returns.
 - When writing services that calculate stock availability or enforce stock invariants.
 
 # Responsibilities
+
 - Treat stock as money-like critical data that cannot be created or destroyed without auditable justification.
 - Enforce the foundational stock equation: `available = on_hand - reserved`.
 - Coordinate the lifecycle transitions of Purchase Orders, Sales Orders, and Stock Transfers.
 - Prevent stock loss, negative unreserved balances, and race conditions during concurrent orders.
 
 # Rules
+
 1. **Stock Mutation Workflow**:
    1. Validate actor authorization and tenant context.
    2. Validate product, SKU, warehouse, and location references.
@@ -33,6 +37,7 @@ Governs the core domain logic of inventory management: stock movements, warehous
 5. **Batch and Expiry Tracking**: Products flagged with `trackBatches: true` must require batch numbers and valid expiry dates during receiving and movement.
 
 # Required Checks
+
 - [ ] Confirm that `available` is never allowed to drop below zero unless explicitly modeled for backorders.
 - [ ] Ensure that every stock change creates a `StockLedgerEntry` row with non-zero delta.
 - [ ] Check that transfer mutations lock both source and destination balances in sorted order to avoid deadlock.
@@ -40,12 +45,14 @@ Governs the core domain logic of inventory management: stock movements, warehous
 - [ ] Ensure cycle counts create reconciling adjustment entries rather than mutating history.
 
 # Common Mistakes
+
 - Relying on Redis to hold authoritative stock balances.
 - Mutating stock on the client side or trusting client-calculated balances.
 - Performing read-then-write updates without row-level database locks.
 - Deleting or editing historical ledger entries to correct count errors.
 
 # Definition Of Done
+
 - Stock operations execute in atomic transactions with row locks.
 - Every mutation leaves an immutable trace in `StockLedgerEntry`.
 - Concurrency tests demonstrate that concurrent allocations never result in negative stock.

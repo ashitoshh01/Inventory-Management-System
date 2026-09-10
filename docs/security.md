@@ -3,6 +3,7 @@
 ## Threat model
 
 Protect:
+
 - user accounts;
 - inventory and pricing;
 - customer/supplier information;
@@ -16,6 +17,7 @@ Assume a malicious authenticated user may attempt horizontal privilege escalatio
 ## Authentication
 
 Recommended:
+
 - secure HTTP-only session cookies for browser apps;
 - short session lifetime with controlled renewal;
 - logout invalidates the session;
@@ -29,11 +31,13 @@ Never store plaintext passwords.
 Use RBAC plus resource/organization scoping.
 
 Bad:
+
 ```ts
 if (user.role === "ADMIN") ...
 ```
 
 Preferred:
+
 ```text
 requirePermission("inventory.adjust")
 ```
@@ -51,6 +55,7 @@ GET /products/:id
 must not simply fetch by `id`.
 
 It must ensure:
+
 ```text
 product.organizationId == actor.organizationId
 ```
@@ -60,6 +65,7 @@ and the actor has `products.read`.
 ## CSRF
 
 If using cookie authentication:
+
 - SameSite cookies;
 - CSRF strategy appropriate to the deployment;
 - do not assume CORS alone prevents CSRF.
@@ -67,6 +73,7 @@ If using cookie authentication:
 ## Rate limiting
 
 At minimum:
+
 - login;
 - password reset;
 - OTP endpoints if present;
@@ -81,6 +88,7 @@ Use Redis-backed rate limiting when running multiple API instances.
 ## Input validation
 
 Validate:
+
 - type;
 - length;
 - allowed enum;
@@ -106,6 +114,7 @@ Reject unknown fields where appropriate.
 Use environment variables or a secrets manager.
 
 Never:
+
 - commit `.env`;
 - put API keys in frontend bundles;
 - print secrets in logs;
@@ -114,6 +123,7 @@ Never:
 ## Logging
 
 Redact:
+
 - authorization headers;
 - cookies;
 - passwords;
@@ -124,6 +134,7 @@ Redact:
 ## Security headers
 
 Configure:
+
 - Content-Security-Policy where compatible;
 - HSTS in production;
 - X-Content-Type-Options;
@@ -134,6 +145,7 @@ Configure:
 ## Dependency security
 
 CI should run:
+
 - package audit;
 - dependency update checks;
 - secret scanning;
@@ -144,6 +156,7 @@ Pin/lock dependency versions.
 ## Database security
 
 Production DB:
+
 - private network where possible;
 - least-privilege application account;
 - separate migration credentials if practical;
@@ -153,6 +166,7 @@ Production DB:
 ## Audit
 
 Audit:
+
 - login/security events;
 - user/role changes;
 - product changes affecting price/SKU;
@@ -169,6 +183,7 @@ Audit events are append-only.
 ## Security acceptance criteria
 
 Before production:
+
 - authorization tests exist;
 - tenant isolation is tested;
 - IDOR tests exist;

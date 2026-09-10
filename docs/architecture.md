@@ -42,6 +42,7 @@ NestJS API (apps/api)
 ## Why not microservices?
 
 At ~100 concurrent users, a modular monolith gives:
+
 - one transaction boundary for stock operations;
 - simpler deployment;
 - simpler local development;
@@ -92,12 +93,14 @@ HTTP request
 ## Sync vs async
 
 Keep synchronous:
+
 - CRUD for normal records;
 - stock mutations;
 - small searches;
 - permission checks.
 
 Move to background jobs:
+
 - large CSV/XLSX import;
 - large exports;
 - report generation;
@@ -112,6 +115,7 @@ A job must be retry-safe.
 ## Scalability
 
 For 100 concurrent users, start with:
+
 - 2 API instances if deployment supports it;
 - 1–2 web instances depending on hosting;
 - managed PostgreSQL;
@@ -136,6 +140,7 @@ If the product will serve multiple companies, model `Organization`/`Tenant` from
 Every tenant-owned table should have an `organizationId` or an unambiguous ownership path.
 
 Authorization must verify:
+
 ```text
 actor.organizationId == resource.organizationId
 ```
@@ -164,12 +169,14 @@ COMMIT
 Avoid application-level locks unless necessary. Prefer PostgreSQL transactions and row-level locking.
 
 For transfer:
+
 - lock source and destination balances in deterministic ID order to reduce deadlocks;
 - validate source available quantity;
 - write outbound/inbound ledger records;
 - update balances atomically.
 
 For reservation:
+
 - lock balance;
 - calculate available = on_hand - reserved;
 - reject if requested quantity > available;
@@ -178,6 +185,7 @@ For reservation:
 ## Caching
 
 Safe cache candidates:
+
 - category lists;
 - brand lists;
 - permissions metadata;
@@ -188,6 +196,7 @@ Never cache mutable stock as authoritative truth.
 ## Observability
 
 Every request should have:
+
 - request ID;
 - actor ID when authenticated;
 - organization ID;

@@ -24,9 +24,11 @@ As a <role>, I want <action>, so that <outcome>.
 ## Permissions
 
 Required:
+
 - `...`
 
 Forbidden:
+
 - `...`
 
 ## API changes

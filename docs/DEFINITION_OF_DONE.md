@@ -5,6 +5,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 0.5 — Architecture & Documentation Normalization
+
 - [ ] All architectural documentation and ADRs are internally consistent.
 - [ ] Framework targets are specified as Next.js 16.x Active LTS and React 19.x.
 - [ ] Monorepo structure (`apps/*`, `packages/*`, `infra/`) is fully agreed and documented.
@@ -15,6 +16,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1A — Monorepo Foundation
+
 - [ ] `pnpm-workspace.yaml`, root `package.json`, and `turbo.json` are initialized.
 - [ ] `packages/config` exports functioning base `tsconfig.json`, ESLint, and Prettier configurations.
 - [ ] `packages/types` builds and exports core TypeScript interfaces and shared contracts.
@@ -23,6 +25,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1B — Development Infrastructure
+
 - [ ] `infra/docker-compose.yml` starts PostgreSQL 16+, Redis 7+, and MinIO.
 - [ ] Healthchecks for PostgreSQL and Redis pass consistently.
 - [ ] Root `.env.example` documents all required development environment variables.
@@ -31,6 +34,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1C — Backend Foundation (`apps/api`)
+
 - [ ] NestJS boots cleanly on port 4000 (or configured `PORT`).
 - [ ] Correlation ID (`x-request-id`) is generated/propagated and attached to every response.
 - [ ] Structured JSON logger outputs required fields (`timestamp`, `service`, `level`, `requestId`).
@@ -40,6 +44,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1D — Frontend Foundation (`apps/web` & `packages/ui`)
+
 - [ ] Next.js 16.x Active LTS boots cleanly with React 19.x and Tailwind CSS.
 - [ ] `packages/ui` exports core accessible primitives (Button, Input, Card, Modal, Table, Badge).
 - [ ] Responsive application layout (dark navy sidebar, light workspace canvas, top navigation, mobile drawer) renders smoothly.
@@ -48,6 +53,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1E — Authentication & Tenant Foundation
+
 - [ ] Passwords hashed with Argon2id; zero plaintext password storage.
 - [ ] Login endpoint (`POST /api/v1/auth/login`) issues secure HTTP-only cookies or JWT tokens.
 - [ ] Current session endpoint (`GET /api/v1/auth/me`) returns authenticated user profile and permissions.
@@ -58,6 +64,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1F — Core Database & Catalog Domain Foundation
+
 - [ ] `packages/database` schema includes `Organization`, `User`, `Warehouse`, `Category`, `Brand`, `UnitOfMeasure`, `Product`, `StockBalance`, `StockLedgerEntry`, and `IdempotencyRecord`.
 - [ ] Initial Prisma migration executes without errors against PostgreSQL.
 - [ ] Seed script executes deterministically, creating default organization, roles, permissions, and admin user.
@@ -67,6 +74,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 1G — Testing & CI Automation
+
 - [ ] Unit test suites pass with zero warnings in `apps/api` and `apps/web`.
 - [ ] Database integration tests execute against a real PostgreSQL container.
 - [ ] Authorization and IDOR tests prove cross-tenant data access is blocked.
@@ -76,6 +84,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 2 — Inventory Core
+
 - [ ] Stock mutations execute within PostgreSQL transactions with row-level locks (`SELECT FOR UPDATE`).
 - [ ] Every balance mutation appends an immutable `StockLedgerEntry` record.
 - [ ] Stock equation invariant (`available = on_hand - reserved >= 0`) is strictly enforced.
@@ -85,6 +94,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 3 — Purchasing, Receiving, Sales & Transfers
+
 - [ ] Purchase order lifecycle transitions strictly through validated status states.
 - [ ] Goods receipt increments stock balances and creates ledger entries atomically.
 - [ ] Sales orders reserve stock upon confirmation and deduct stock upon shipment.
@@ -94,6 +104,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 4 — Reports, Analytics & Forecasting
+
 - [ ] Inventory valuation queries execute efficiently using database indexes.
 - [ ] Bulk import and export jobs run asynchronously via BullMQ workers.
 - [ ] Scheduled background jobs scan for low-stock and batch expiry, emitting deduplicated alerts.
@@ -102,6 +113,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 5 — Production Hardening
+
 - [ ] Rate limiters are verified on auth, mutations, search, and export routes.
 - [ ] Latency targets are achieved under 100 concurrent simulated users (p95 reads < 500 ms, writes < 750 ms).
 - [ ] Structured logging redacts all sensitive fields and tokens.
@@ -110,6 +122,7 @@ A phase is only considered complete when all criteria under its corresponding se
 ---
 
 ## Phase 6 — UI Polish & Optimization
+
 - [ ] All data tables support server-side pagination, sorting, search debounce, and empty/error states.
 - [ ] WCAG AA accessibility audit passes with zero critical issues.
 - [ ] Application is verified on desktop, tablet, and mobile browsers.

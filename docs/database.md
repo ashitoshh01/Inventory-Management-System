@@ -28,11 +28,13 @@ Define allowed precision per unit of measure and use a database representation t
 ### StockBalance
 
 One row per:
+
 ```text
 organization + warehouse + location + sku + batch(optional)
 ```
 
 Conceptual fields:
+
 - id
 - organizationId
 - warehouseId
@@ -50,6 +52,7 @@ Unique key must prevent duplicate balances for the same stock bucket.
 ### StockLedgerEntry
 
 Immutable append-only history:
+
 - id
 - organizationId
 - skuId
@@ -65,6 +68,7 @@ Immutable append-only history:
 - createdAt
 
 Examples of types:
+
 - PURCHASE_RECEIPT
 - SALE
 - SALE_RETURN
@@ -102,6 +106,7 @@ Prisma transaction APIs should be used in application code, with raw SQL only wh
 ## Important constraints
 
 Examples:
+
 - SKU unique within organization.
 - Barcode unique within organization when present.
 - warehouse name unique within organization.
@@ -117,6 +122,7 @@ Examples:
 ## Index strategy
 
 Expected indexes:
+
 - `(organizationId, skuId, warehouseId)`
 - `(organizationId, warehouseId, skuId)`
 - `(organizationId, barcode)`
@@ -132,9 +138,11 @@ Do not add an index to every column.
 ## Pagination
 
 For ordinary admin tables:
+
 - offset pagination is acceptable at modest sizes.
 
 For high-churn or large feeds:
+
 - cursor pagination using a stable `(createdAt, id)` ordering.
 
 Always specify deterministic ordering.
@@ -150,6 +158,7 @@ For products, prefer `active=false` rather than deletion if referenced by histor
 ## Migrations
 
 Rules:
+
 1. migration must be reviewed;
 2. never edit an applied migration;
 3. avoid long table locks;
@@ -161,6 +170,7 @@ Rules:
 ## Backups
 
 Production database:
+
 - automated daily backups at minimum;
 - point-in-time recovery if supported by the provider;
 - retention policy defined by business requirements;

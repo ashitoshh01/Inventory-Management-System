@@ -1,6 +1,7 @@
 # Production Readiness Checklist
 
 ## Foundation
+
 - [ ] Monorepo builds
 - [ ] lint/typecheck configured
 - [ ] environment validation
@@ -9,6 +10,7 @@
 - [ ] structured logging configured
 
 ## Identity & security
+
 - [ ] authentication
 - [ ] RBAC
 - [ ] tenant isolation if multi-tenant
@@ -19,6 +21,7 @@
 - [ ] audit events
 
 ## Catalog
+
 - [ ] products/SKUs
 - [ ] barcodes
 - [ ] categories
@@ -28,11 +31,13 @@
 - [ ] product lifecycle
 
 ## Warehouses
+
 - [ ] warehouses
 - [ ] locations
 - [ ] warehouse permissions
 
 ## Inventory
+
 - [ ] stock balances
 - [ ] immutable ledger
 - [ ] adjustments
@@ -46,6 +51,7 @@
 - [ ] reconciliation report
 
 ## Purchasing
+
 - [ ] suppliers
 - [ ] purchase orders
 - [ ] approval
@@ -53,6 +59,7 @@
 - [ ] partial receiving
 
 ## Sales
+
 - [ ] customers
 - [ ] sales/POS
 - [ ] payment states
@@ -60,6 +67,7 @@
 - [ ] returns
 
 ## Reporting
+
 - [ ] inventory valuation
 - [ ] stock movement
 - [ ] sales
@@ -68,6 +76,7 @@
 - [ ] export jobs
 
 ## Reliability
+
 - [ ] database backups
 - [ ] restore drill
 - [ ] health/readiness
@@ -78,6 +87,7 @@
 - [ ] monitoring alerts
 
 ## UX
+
 - [ ] responsive
 - [ ] keyboard accessible
 - [ ] loading states
@@ -88,6 +98,7 @@
 - [ ] table pagination/filtering
 
 ## Performance
+
 - [ ] 100-user load test
 - [ ] dashboard benchmark
 - [ ] stock mutation benchmark
@@ -96,6 +107,7 @@
 - [ ] bounded payloads
 
 ## Final
+
 - [ ] staging smoke test
 - [ ] production runbook
 - [ ] security review

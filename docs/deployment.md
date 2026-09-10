@@ -20,6 +20,7 @@ This is enough for the initial ~100-user target.
 ## Environments
 
 Maintain:
+
 - local
 - development
 - staging
@@ -52,6 +53,7 @@ Do not commit actual values.
 ## CI pipeline
 
 Every pull request:
+
 1. install with lockfile;
 2. lint;
 3. typecheck;
@@ -61,6 +63,7 @@ Every pull request:
 7. dependency/security checks.
 
 Protected main branch:
+
 - required CI;
 - reviewed pull request;
 - no direct production deploy from a developer laptop.
@@ -82,6 +85,7 @@ For breaking schema changes, use expand/contract migrations.
 ## Health endpoints
 
 API should expose:
+
 - liveness: process is running;
 - readiness: dependencies required for serving traffic are available.
 
@@ -94,6 +98,7 @@ API must stop accepting new requests and allow in-flight requests/jobs to finish
 ## Database
 
 Production PostgreSQL should have:
+
 - automated backups;
 - point-in-time recovery if available;
 - monitoring;
@@ -104,6 +109,7 @@ Production PostgreSQL should have:
 ## Redis
 
 Use Redis for:
+
 - queues;
 - cache;
 - rate limiting;
@@ -116,6 +122,7 @@ Never use Redis as the only storage for inventory.
 Run worker processes separately from the HTTP API when practical.
 
 Jobs must include:
+
 - unique job identity;
 - retries;
 - exponential backoff;
@@ -125,15 +132,18 @@ Jobs must include:
 ## Rollback
 
 Application rollback:
+
 - retain previous image/container version.
 
 Database rollback:
+
 - do not assume every migration can be reversed.
 - prefer forward-compatible fixes.
 
 ## Smoke test
 
 After deployment:
+
 - login;
 - read dashboard;
 - search product;
@@ -147,6 +157,7 @@ Production smoke tests must not mutate real business data unless specifically de
 ## Incident basics
 
 When something goes wrong:
+
 1. protect data;
 2. identify blast radius;
 3. stop unsafe mutations if required;

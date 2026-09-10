@@ -51,12 +51,14 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 ## Endpoint groups
 
 ### Auth
+
 - `POST /auth/login`
 - `POST /auth/logout`
 - `POST /auth/refresh` if token refresh is used
 - `GET /auth/me`
 
 ### Users / roles
+
 - `GET /users`
 - `POST /users`
 - `PATCH /users/:id`
@@ -64,6 +66,7 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 - `PUT /users/:id/roles`
 
 ### Catalog
+
 - `GET /products`
 - `POST /products`
 - `GET /products/:id`
@@ -74,12 +77,14 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 - `GET /units`
 
 ### Warehouses
+
 - `GET /warehouses`
 - `POST /warehouses`
 - `GET /warehouses/:id`
 - `PATCH /warehouses/:id`
 
 ### Inventory
+
 - `GET /inventory`
 - `GET /inventory/summary`
 - `GET /inventory/ledger`
@@ -91,6 +96,7 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 - `POST /inventory/transfers/:id/receive`
 
 ### Purchasing
+
 - `GET /purchase-orders`
 - `POST /purchase-orders`
 - `PATCH /purchase-orders/:id`
@@ -98,6 +104,7 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 - `POST /purchase-orders/:id/receive`
 
 ### Sales
+
 - `GET /sales`
 - `POST /sales`
 - `GET /sales/:id`
@@ -105,11 +112,13 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 - `POST /sales/:id/cancel`
 
 ### Returns
+
 - `POST /returns`
 - `GET /returns`
 - `GET /returns/:id`
 
 ### Reports
+
 - `GET /reports/sales`
 - `GET /reports/inventory-value`
 - `GET /reports/stock-movement`
@@ -118,6 +127,7 @@ Do not expose stack traces, SQL errors, or internal exception messages in produc
 ## Pagination contract
 
 Support:
+
 - `page`
 - `pageSize`
 - `sortBy`
@@ -139,6 +149,7 @@ Idempotency-Key: <uuid>
 ```
 
 For supported operations:
+
 - same key + same actor + same endpoint should return the original result;
 - same key with materially different payload should fail;
 - records expire according to a documented retention policy.
@@ -148,6 +159,7 @@ For supported operations:
 Breaking changes require a new version or compatibility strategy.
 
 Prefer additive changes:
+
 - add optional fields;
 - add endpoints;
 - deprecate before removal.
@@ -163,6 +175,7 @@ inventory.adjust
 ```
 
 The API checks:
+
 1. authenticated user;
 2. active organization;
 3. role/permission;
@@ -176,6 +189,7 @@ The controller must not own stock transaction logic. The application service/use
 ## Webhooks
 
 For inbound webhooks:
+
 - verify signature;
 - persist receipt;
 - deduplicate;

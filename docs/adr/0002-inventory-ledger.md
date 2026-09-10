@@ -1,11 +1,13 @@
 # ADR 0002 — Immutable Inventory Ledger + Current Balance
 
 ## Status
+
 Accepted
 
 ## Decision
 
 Maintain:
+
 1. an immutable `StockLedgerEntry` history;
 2. a current `StockBalance` for fast reads.
 
@@ -16,6 +18,7 @@ The balance is updated transactionally with the ledger.
 Ledger-only reads become expensive at scale. Balance-only storage destroys traceability.
 
 The combination provides:
+
 - fast current inventory;
 - complete movement history;
 - reconciliation capability;

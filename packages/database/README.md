@@ -3,6 +3,7 @@
 Prisma schema, SQL migrations, seed scripts, and generated database client utilities live here.
 
 ## Rules
+
 - Authoritative persistence configuration only.
 - Exclusively consumed by `apps/api` and operational tooling (seed/migrate).
 - **CRITICAL INVARIANT**: `apps/web` must NEVER import from or depend on `packages/database`.

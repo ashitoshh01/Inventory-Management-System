@@ -10,6 +10,7 @@ The product is intentionally designed as a **decoupled modular monolith** within
 ## Reference UI
 
 The supplied dashboard references establish the visual direction:
+
 - dark navy left navigation
 - clean light workspace
 - blue/indigo primary actions

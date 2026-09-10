@@ -15,6 +15,7 @@ Do not make every test E2E.
 ## Unit tests
 
 Test pure business rules:
+
 - stock availability;
 - reorder calculations;
 - expiry classification;
@@ -26,6 +27,7 @@ Test pure business rules:
 ## Integration tests
 
 Use a real PostgreSQL test database/container for:
+
 - stock transactions;
 - constraints;
 - unique keys;
@@ -40,6 +42,7 @@ Mocks alone cannot prove database correctness.
 At least one test should simulate two simultaneous attempts to consume the same stock.
 
 Expected:
+
 - total stock never becomes negative;
 - one operation may succeed and the other fails/retries according to policy;
 - ledger and balance remain consistent.
@@ -62,6 +65,7 @@ Expected:
 ## API contract tests
 
 Verify:
+
 - validation;
 - response shape;
 - error codes;
@@ -72,6 +76,7 @@ Verify:
 ## Frontend tests
 
 Test:
+
 - table filters;
 - forms;
 - validation;
@@ -83,6 +88,7 @@ Test:
 ## Performance tests
 
 Before production:
+
 - load test normal reads;
 - load test stock mutation;
 - test dashboard endpoints;
@@ -91,12 +97,14 @@ Before production:
 - inspect DB query plans.
 
 Initial target:
+
 - 100 concurrent active users;
 - p95 common API < 500 ms under expected workload.
 
 ## Regression rule
 
 Every production bug should result in:
+
 1. a test that reproduces it;
 2. a fix;
 3. a test proving the fix.

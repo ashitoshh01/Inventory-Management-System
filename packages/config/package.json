@@ -1,0 +1,12 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint.base.mjs": "./eslint.base.mjs",
+    "./eslint.web.mjs": "./eslint.web.mjs",
+    "./prettier.config.mjs": "./prettier.config.mjs"
+  }
+}
