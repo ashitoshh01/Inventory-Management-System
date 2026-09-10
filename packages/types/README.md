@@ -1,3 +1,7 @@
 # Shared Types
 
-Only share stable contracts and primitive domain types here. Avoid turning this package into a copy of the database schema.
+Shared domain primitives, DTO contracts, and API request/response envelopes.
+
+Avoid duplicating database schema definitions here. Only share cross-boundary, stable contracts between `apps/api` and `apps/web`.
+
+See `docs/api.md` and `.claude/skills/api/SKILL.md`.

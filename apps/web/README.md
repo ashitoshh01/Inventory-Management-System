@@ -1,7 +1,9 @@
 # Web App
 
-Next.js application.
+Next.js 16.x Active LTS application with React 19.x and Tailwind CSS.
 
-Keep route/page composition here. Business rules belong in the API/domain layer.
+Keep route/page composition and UI presentation here. Business rules, stock calculation, and authorization authority belong exclusively in the API/domain layer (`apps/api`).
 
-See root `CLAUDE.md` and `docs/ui.md`.
+`apps/web` must never import from `packages/database` or connect directly to PostgreSQL.
+
+See root `CLAUDE.md`, `docs/ui.md`, and `.claude/skills/frontend/SKILL.md`.

@@ -2,16 +2,24 @@
 
 ## Decision
 
-Use a **modular monolith** with separate web and API applications.
+Use a **decoupled modular monolith** with separate web (`apps/web`) and API (`apps/api`) applications inside a pnpm/Turborepo monorepo.
+
+- **Frontend**: Next.js 16.x Active LTS + React 19.x
+- **Backend**: NestJS
+- **Shared Packages**:
+  - `packages/database`: PostgreSQL 16+ access layer via Prisma (consumed exclusively by `apps/api` and migration tooling; never imported by `apps/web`)
+  - `packages/ui`: Shared accessible UI primitives
+  - `packages/types`: Shared domain primitives and DTO contracts
+  - `packages/config`: Shared TypeScript, ESLint, and Prettier configurations
 
 ```text
 Browser
    │
    ▼
-Next.js Web
-   │ HTTPS
+Next.js 16 Web (apps/web)
+   │ HTTPS / JSON
    ▼
-NestJS API
+NestJS API (apps/api)
    ├── Auth & Users
    ├── Catalog
    ├── Warehouses

@@ -1,3 +1,5 @@
 # Shared Config
 
-Shared TypeScript, linting, formatting, and tooling configuration.
+Shared TypeScript (`tsconfig.base.json`), ESLint, Prettier, and monorepo tooling configuration.
+
+See `.claude/skills/devops/SKILL.md`.

@@ -9,25 +9,35 @@ The initial production target is approximately **100 concurrent active users**. 
 ## Read these files first
 
 For any non-trivial task:
-1. `docs/architecture.md`
-2. `docs/product-requirements.md`
-3. the relevant skill under `.claude/skills/`
-4. the relevant domain/database/API document
+1. `docs/ENGINEERING_RULES.md` — non-negotiable invariant rules
+2. `docs/IMPLEMENTATION_ORDER.md` — authoritative phase sequence
+3. `docs/DEFINITION_OF_DONE.md` — phase completion gates
+4. `docs/architecture.md`
+5. `docs/product-requirements.md`
+6. the relevant skill under `.claude/skills/<skill_name>/SKILL.md`
+7. the relevant domain/database/API document
 
-If a task changes architecture, update the appropriate ADR.
+If a task changes architecture, update or create the appropriate ADR in `docs/adr/`.
+
+> [!NOTE]
+> The previous Next.js monolithic codebase in git history (`HEAD~1`) is strictly historical. Do not use it as an implementation reference.
 
 ## Stack contract
 
-- `apps/web`: Next.js + React + TypeScript
+- `apps/web`: Next.js 16.x Active LTS + React 19.x + TypeScript + Tailwind CSS
 - `apps/api`: NestJS + TypeScript
-- PostgreSQL is the system of record.
+- `packages/database`: PostgreSQL 16+ persistence via Prisma (consumed strictly by `apps/api` and CLI tooling; never imported by `apps/web`)
+- `packages/ui`: Shared accessible UI primitives
+- `packages/types`: Shared domain primitives and DTO contracts
+- `packages/config`: Shared TypeScript, ESLint, and Prettier configurations
+- PostgreSQL is the authoritative system of record.
 - Prisma is the database access layer.
 - Redis is for ephemeral/cache/queue concerns, never the authoritative stock store.
 - BullMQ handles asynchronous jobs.
-- S3-compatible storage handles uploaded files.
+- S3-compatible storage handles uploaded files (MinIO locally).
 - Docker is the deployment packaging boundary.
 
-Do not replace these technologies without documenting why.
+Do not replace these technologies without an approved ADR.
 
 ## Architecture rules
 
