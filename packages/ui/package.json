@@ -9,10 +9,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./globals.css": "./src/globals.css",
+    "./dist/globals.css": "./src/globals.css"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/globals.css dist/globals.css",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
