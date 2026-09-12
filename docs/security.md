@@ -192,3 +192,21 @@ Before production:
 - secrets are absent from source/build artifacts;
 - dependency vulnerabilities are reviewed;
 - backup restore is tested.
+
+## Phase 2A Architecture Implementation Details
+- **Authentication**: Hybrid Cookie/JWT strategy. Short-lived (15m) access token and long-lived (7d) refresh token stored as HttpOnly, Secure, SameSite=strict cookies. Tokens are NEVER exposed to JS via JSON responses or localStorage.
+- **Tenant Isolation**: Strictly enforced by `OrganizationGuard`. Requires `x-organization-id` header AND validates active membership within PostgreSQL before assigning `request.activeOrganization`.
+- **Argon2 Hardening**: Uses argon2id variant, memoryCost 64MB, timeCost 3 iterations, parallelism 4.
+- **Audit Sanitization**: Audit logs scrub sensitive keys like `password`, `token`, `secret`, `cookie`, `database_url` before database insertion.
+
+## Phase 2B Security Enhancements — Core Domain Foundation
+- **IDOR Protection at Query Level**:
+  - Direct database queries for tenant-owned resources MUST apply `TenantQueryHelper.scopeToOrg` or verify via `TenantQueryHelper.assertTenantOwnership`.
+  - When a requested ID exists under a different tenant, `assertTenantOwnership` throws `EntityNotFoundException` (HTTP 404). This eliminates IDOR vulnerability without exposing entity existence across tenant boundaries.
+- **Database Error Masking & Information Leakage Prevention**:
+  - Prisma errors are intercepted by `AllExceptionsFilter` before reaching the client:
+    - `P2002` (Unique constraint): Transformed to HTTP 409 `DUPLICATE_RESOURCE`. Index names, column names, and conflicting values are stripped from the response.
+    - `P2003` (Foreign key constraint): Transformed to HTTP 400 `FOREIGN_KEY_VIOLATION`. Referenced table names and key constraints are stripped.
+    - `P2025` (Record not found): Transformed to HTTP 404 `NOT_FOUND`. Internal query details are stripped.
+- **Parameter & Sort Injection Prevention**:
+  - `validateSortField` enforces strict whitelist validation on incoming sort fields against domain-allowed properties, preventing arbitrary column introspection or injection attacks.

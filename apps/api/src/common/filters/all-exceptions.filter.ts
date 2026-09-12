@@ -57,6 +57,37 @@ export class AllExceptionsFilter implements ExceptionFilter {
           details = errorObj.message;
         }
       }
+    } else if (
+      exception &&
+      typeof exception === 'object' &&
+      'code' in exception &&
+      typeof (exception as { code: unknown }).code === 'string' &&
+      (exception as { code: string }).code.startsWith('P')
+    ) {
+      // Safe mapping for Prisma Client Known Request Errors without leaking DB details
+      const prismaCode = (exception as { code: string }).code;
+      switch (prismaCode) {
+        case 'P2002':
+          status = HttpStatus.CONFLICT;
+          code = 'DUPLICATE_RESOURCE';
+          message = 'A resource with this identifier or unique attribute already exists.';
+          break;
+        case 'P2025':
+          status = HttpStatus.NOT_FOUND;
+          code = 'NOT_FOUND';
+          message = 'The requested resource was not found.';
+          break;
+        case 'P2003':
+          status = HttpStatus.BAD_REQUEST;
+          code = 'FOREIGN_KEY_VIOLATION';
+          message = 'Referenced resource does not exist or operation violates relational constraints.';
+          break;
+        default:
+          status = HttpStatus.INTERNAL_SERVER_ERROR;
+          code = 'DATABASE_ERROR';
+          message = 'A database operation error occurred.';
+          break;
+      }
     } else {
       code = 'INTERNAL_SERVER_ERROR';
       message = 'An unexpected internal error occurred.';

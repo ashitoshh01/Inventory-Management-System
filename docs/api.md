@@ -196,3 +196,41 @@ For inbound webhooks:
 - process asynchronously when possible;
 - return quickly;
 - retry safely.
+
+## Phase 2A Updates
+- Standardized envelope format `{ data, meta: { requestId } }` via TransformInterceptor.
+- Added endpoints: `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/organizations`, `/organizations/:id`, `/organizations/:id/members`, `/organizations/:id/members/:memberId`.
+- All organization scoped endpoints require `x-organization-id` header.
+
+## Phase 2B Updates — Core Domain Foundation
+- **Pagination Contract**:
+  - Query parameters:
+    - `page`: 1-based integer index (default: `1`).
+    - `limit`: items per page, clamped to a maximum of `100` (default: `20`).
+    - `sortBy`: string field name validated against an explicit domain allowlist.
+    - `sortOrder`: `ASC` or `DESC` (case-insensitive, defaults to `ASC`).
+  - Standardized Paginated Response Envelope:
+    ```json
+    {
+      "data": [ ... ],
+      "meta": {
+        "page": 1,
+        "limit": 20,
+        "total": 250,
+        "totalPages": 13,
+        "hasNextPage": true,
+        "hasPreviousPage": false,
+        "requestId": "req-12345"
+      }
+    }
+    ```
+- **Sorting Security & Allowlists**:
+  - `validateSortField(dto, allowedFields)` validates that requested sort keys belong to an explicit allowlist. Disallowed fields trigger `BadRequestException` to prevent SQL/field injection.
+- **Domain Exception & Database Error Codes**:
+  - `DUPLICATE_RESOURCE` (HTTP 409): Unique constraint violation (Prisma P2002). Internal database index details are sanitized.
+  - `NOT_FOUND` (HTTP 404): Resource not found or tenant boundary cross attempt (Prisma P2025 / `EntityNotFoundException`).
+  - `FOREIGN_KEY_VIOLATION` (HTTP 400): Referenced entity does not exist or relation constraint failed (Prisma P2003). Internal constraint details are sanitized.
+  - `TENANT_VIOLATION` (HTTP 403 / 404): Cross-tenant access attempt.
+  - `INVALID_STATE_TRANSITION` (HTTP 400): Attempted lifecycle transition not permitted by domain state machine.
+  - `INVALID_MONEY_AMOUNT` (HTTP 400): Malformed currency or negative/fractional minor unit violation.
+  - `INVALID_QUANTITY` (HTTP 400): Precision overflow (beyond 4 decimal places) or negative quantity violation.

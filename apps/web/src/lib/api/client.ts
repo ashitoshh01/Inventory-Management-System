@@ -53,13 +53,21 @@ export const apiClient = async <T>(
   if (!headers.has('x-request-id')) {
     headers.set('x-request-id', requestId);
   }
+  
+  if (typeof window !== 'undefined') {
+    const orgId = localStorage.getItem('activeOrganizationId');
+    if (orgId && !headers.has('x-organization-id')) {
+      headers.set('x-organization-id', orgId);
+    }
+  }
+
   // Allow credentials for auth cookies
   const credentials = options?.credentials || 'include';
 
   let response: Response;
   try {
     response = await fetch(url, { ...options, headers, credentials });
-  } catch (e) {
+  } catch {
     throw new ApiError({
       code: 'UNKNOWN_ERROR',
       message: 'An unknown error occurred while communicating with the server.',
@@ -73,7 +81,7 @@ export const apiClient = async <T>(
       if (errorData.error) {
         throw new ApiError(errorData.error);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       if (e instanceof ApiError) throw e;
       throw new ApiError({
         code: 'UNKNOWN_ERROR',

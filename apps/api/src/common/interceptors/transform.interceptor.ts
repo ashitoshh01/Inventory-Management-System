@@ -27,17 +27,18 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponseEn
     return next.handle().pipe(
       map((res: unknown) => {
         // If response is already an envelope with data and meta, pass through and guarantee requestId
-        if (res !== null && typeof res === 'object' && 'data' in res && 'meta' in res) {
-          const typedRes = res as { data: T; meta: Record<string, unknown> };
+        if (res !== null && typeof res === 'object' && 'data' in res) {
+          const typedRes = res as { data: T; meta?: Record<string, unknown> };
           return {
             data: typedRes.data,
             meta: {
               requestId,
-              ...typedRes.meta,
+              ...(typedRes.meta || {}),
             },
           };
         }
 
+        // Otherwise, wrap the raw response
         return {
           data: res as T,
           meta: {

@@ -108,3 +108,27 @@ Every production bug should result in:
 1. a test that reproduces it;
 2. a fix;
 3. a test proving the fix.
+
+## Phase 2B Testing Conventions
+
+Phase 2B implements rigorous testing across domain utilities, safety filters, and E2E endpoints:
+
+- **Domain Utility Unit Tests**:
+  - `money.util.spec.ts`: Validates integer minor unit conversions, string-based exact arithmetic, addition, subtraction, division, and rounding behavior without floating point drift.
+  - `quantity.util.spec.ts`: Validates 4-decimal precision, fractional scale factors, additions, subtractions, and comparisons.
+  - `state-machine.util.spec.ts`: Validates deterministic state transition validation, terminal state enforcement, and transition metadata.
+  - `tenant-query.helper.spec.ts`: Validates multi-tenant query filter composition, ownership assertions, and IDOR prevention exceptions.
+  - `pagination.dto.spec.ts`: Validates pagination query transformations, clamping logic, and sort whitelist verification.
+  - `all-exceptions.filter.spec.ts`: Validates sanitization and HTTP status code mappings for Prisma exceptions (`P2002`, `P2003`, `P2025`) and domain exceptions.
+
+- **E2E Core Domain Tests**:
+  - `core-domain.e2e-spec.ts`: Executes against a live PostgreSQL test database to verify real Prisma constraint error interception, database error sanitization, and tenant query scoping under full HTTP lifecycle.
+
+- **Test Execution**:
+  ```bash
+  # Run all API unit and integration tests
+  pnpm --filter @repo/api test
+
+  # Run API E2E tests against PostgreSQL test database
+  pnpm --filter @repo/api test:e2e
+  ```

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { StructuredLogger } from './common/logger/structured-logger.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -18,6 +19,7 @@ async function bootstrap(): Promise<void> {
 
   // 1. Security Headers via Helmet
   app.use(helmet());
+  app.use(cookieParser());
 
   // 2. Cross-Origin Resource Sharing (CORS) Hardening
   const envOrigins = process.env.CORS_ORIGIN;
@@ -53,7 +55,7 @@ async function bootstrap(): Promise<void> {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'Idempotency-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'Idempotency-Key', 'x-organization-id'],
     exposedHeaders: ['x-request-id'],
   });
 

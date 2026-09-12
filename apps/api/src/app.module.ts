@@ -4,6 +4,10 @@ import { HealthModule } from './modules/health/health.module';
 import { DatabaseModule } from './common/database/database.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { StructuredLogger } from './common/logger/structured-logger.service';
+import { AuditModule } from './modules/audit/audit.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { CoreModule } from './modules/core/core.module';
 
 @Module({
   imports: [
@@ -12,7 +16,11 @@ import { StructuredLogger } from './common/logger/structured-logger.service';
       envFilePath: ['.env', '../../.env'],
     }),
     DatabaseModule,
+    CoreModule,
     HealthModule,
+    AuditModule,
+    AuthModule,
+    OrganizationsModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

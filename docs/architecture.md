@@ -209,3 +209,23 @@ Sensitive values must be redacted.
 ## Architecture evolution
 
 If a module becomes independently scalable or has a distinct reliability boundary, propose an ADR before extracting it into a service.
+
+## Phase 2B Core Domain Foundation
+
+Phase 2B establishes the domain-agnostic foundation layer located at `apps/api/src/modules/core/` and `@repo/types`:
+
+1. **Global Core Module (`CoreModule`)**:
+   - Registered globally in NestJS `AppModule`.
+   - Exports domain-agnostic helpers: `TenantQueryHelper`, `MoneyUtil`, `QuantityUtil`, `StateMachineUtil`.
+   - Zero coupling to future business entities (Products, Warehouses, Orders remain strictly for Phase 3+).
+
+2. **Tenant Scoping Architecture**:
+   - All multi-tenant data access must route through `TenantQueryHelper.scopeToOrg(where, orgId)` or explicitly assert ownership via `assertTenantOwnership(entity, orgId)`.
+   - Protects against Insecure Direct Object References (IDOR). If an entity belongs to another tenant, the API responds with 404 (`EntityNotFoundException`), never revealing the existence of cross-tenant records.
+
+3. **Financial & Numerical Integrity**:
+   - **Money**: Handled via `MoneyUtil` using exact integer minor units (paise/cents) to prevent IEEE 754 floating-point drift.
+   - **Quantity**: Handled via `QuantityUtil` supporting exact 4-decimal precision using integer scaling (`bigint` internally).
+
+4. **Lifecycle State Management**:
+   - `StateMachineUtil` enforces finite state machine transitions for domain entities. Invalid transitions reject mutations before persistence.

@@ -193,3 +193,16 @@ Production database:
 - restore drill performed periodically.
 
 A backup that has never been restored is not a verified backup.
+
+## Phase 2A Schema Updates
+- Added models for Multi-tenancy and Identity: `User`, `Organization`, `OrganizationMembership`, `Role`, `Permission`, `RolePermission`, `Session`, `AuditEvent`.
+- Uses UUIDs for primary keys and establishes strict relational boundaries.
+
+## Phase 2B Core Domain Conventions
+- **Organization Ownership**: All tenant-scoped entities feature `organizationId` foreign keys directly referencing `Organization.id`. Single-record lookups must always scope by `where: { id, organizationId }` to prevent tenant leaks.
+- **Identifier Strategy**: All table primary keys are standard RFC 4122 UUIDv4 strings (`@id @default(uuid())`).
+- **Timestamp Strategy**: Timezone-aware PostgreSQL `TIMESTAMPTZ` via Prisma `DateTime @default(now())` and `@updatedAt`.
+- **Financial Minor Units**: Stored as exact integer minor units (`BigInt` / `Int`, e.g. paise / cents) or exact `DECIMAL(12, 2)`. Avoid binary floating point.
+- **Inventory Quantities**: Stored as exact PostgreSQL `DECIMAL(14, 4)` to support fractional unit measurements (up to 4 decimal places) without float drift.
+- **Soft Deletion Policy**: Applied only where historical/audit records link to the entity (e.g. products, suppliers). Entities have `deletedAt DateTime?`. Active filters (`where: { deletedAt: null }`) are strictly enforced. Append-only ledger or audit events are never soft-deleted.
+
