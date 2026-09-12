@@ -10,6 +10,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { CoreModule } from './modules/core/core.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
+import { WarehousesModule } from './modules/warehouses/warehouses.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ProductsModule } from './modules/products/products.module';
     OrganizationsModule,
     CategoriesModule,
     ProductsModule,
+    WarehousesModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

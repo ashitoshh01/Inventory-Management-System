@@ -31,6 +31,7 @@ Use a real PostgreSQL test database/container for:
 - stock transactions;
 - constraints;
 - unique keys;
+- warehouse tenant isolation and compound constraints;
 - locking/concurrency;
 - repository behavior;
 - authorization with tenant scoping.

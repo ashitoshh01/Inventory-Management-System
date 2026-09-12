@@ -17,3 +17,4 @@ export * from './auth.js';
 export * from './domain.js';
 export * from './category.js';
 export * from './product.js';
+export * from './warehouse.js';

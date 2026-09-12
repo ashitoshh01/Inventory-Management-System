@@ -24,6 +24,10 @@ async function main(): Promise<void> {
       { action: 'product.create', description: 'Create products' },
       { action: 'product.update', description: 'Update products' },
       { action: 'product.delete', description: 'Delete products' },
+      { action: 'warehouse.read', description: 'View warehouses' },
+      { action: 'warehouse.create', description: 'Create warehouses' },
+      { action: 'warehouse.update', description: 'Update warehouses' },
+      { action: 'warehouse.delete', description: 'Delete warehouses' },
     ];
 
     for (const perm of corePermissions) {

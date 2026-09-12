@@ -307,3 +307,47 @@ For inbound webhooks:
     - Returns `409 Conflict` (`PRODUCT_DELETE_CONFLICT`) if referenced by other foreign key relationships.
     - Emits immutable `product.deleted` audit event.
     - Status: `200 OK` with `{ message: 'Product deleted successfully', id }`.
+
+## Phase 4B Updates — Warehouse REST API
+
+- **Base Route**: `/api/v1/warehouses`
+- **Security & Headers**:
+  - Requires valid Bearer JWT cookie/header (`JwtAuthGuard`).
+  - Requires `x-organization-id` header validating active tenant membership (`OrganizationGuard`).
+  - Permissions enforced via `@RequirePermissions(...)` with `PermissionsGuard`.
+- **Endpoints**:
+  - `POST /api/v1/warehouses` — Create Warehouse (`warehouse.create` permission)
+    - Body: `{ name: string, code: string, description?: string, addressLine1?: string, addressLine2?: string, city?: string, state?: string, postalCode?: string, country?: string, status?: WarehouseStatus, isDefault?: boolean }`
+    - Validation: Name (2–100 chars), Code normalized (trimmed, uppercase, 2–50 chars, `^[A-Z0-9_-]+$`), Status (`ACTIVE` | `INACTIVE`), reject unknown and protected fields (`id`, `organizationId`, `createdAt`, `updatedAt`).
+    - Default warehouse: The first warehouse in an organization automatically becomes default; setting `isDefault: true` atomically unsets any prior default.
+    - Uniqueness: Duplicate code or duplicate name within the active organization returns `409 Conflict` (`WAREHOUSE_DUPLICATE_CODE` / `WAREHOUSE_DUPLICATE_NAME`). Identical codes permitted across separate organizations.
+    - Status: `201 Created` with standard API envelope and audit event `warehouse.created`.
+  - `GET /api/v1/warehouses` — List Warehouses (`warehouse.read` permission)
+    - Query parameters:
+      - `page`: integer (default: 1)
+      - `limit`: integer (default: 20, max: 100)
+      - `search`: string (case-insensitive search across `name`, `code`, `city`)
+      - `status`: string (`ACTIVE` | `INACTIVE`)
+      - `sortBy`: string (`name` | `code` | `city` | `status` | `createdAt` | `updatedAt`, default: `createdAt`)
+      - `sortOrder`: `asc` | `desc` (default: `desc`)
+    - Strictly scoped to active tenant. Disallowed sort fields return `400 Bad Request`.
+    - Status: `200 OK` with paginated metadata envelope (`page`, `limit`, `total`, `totalPages`, `hasNextPage`, `hasPreviousPage`, `requestId`).
+  - `GET /api/v1/warehouses/code/:code` — Retrieve Warehouse by Code (`warehouse.read` permission)
+    - Parameter `:code`: normalized uppercase.
+    - Tenant isolation: Returns `404 Not Found` (`WAREHOUSE_NOT_FOUND`) if code does not exist in the active organization.
+    - Status: `200 OK`.
+  - `GET /api/v1/warehouses/:id` — Retrieve Warehouse by ID (`warehouse.read` permission)
+    - Parameter `:id`: validated as UUIDv4.
+    - Tenant isolation: Returns `404 Not Found` (`WAREHOUSE_NOT_FOUND`) on IDOR or nonexistent record.
+    - Status: `200 OK`.
+  - `PATCH /api/v1/warehouses/:id` — Update Warehouse (`warehouse.update` permission)
+    - Body: `{ name?: string, code?: string, description?: string, addressLine1?: string, addressLine2?: string, city?: string, state?: string, postalCode?: string, country?: string, status?: WarehouseStatus, isDefault?: boolean }`
+    - Rejects protected field mutations (`id`, `organizationId`, `createdAt`, `updatedAt`).
+    - Uniqueness: Checks against collisions in active tenant (`409 Conflict`).
+    - Default switching: Setting `isDefault: true` atomically switches default from previous warehouse.
+    - Status: `200 OK` with audit event `warehouse.updated`.
+  - `DELETE /api/v1/warehouses/:id` — Delete Warehouse (`warehouse.delete` permission)
+    - Parameter `:id`: validated as UUIDv4.
+    - Tenant isolation: Returns `404 Not Found` on cross-tenant IDOR attempt.
+    - Default conflict: Deleting the designated default warehouse returns `409 Conflict` (`WAREHOUSE_DELETE_CONFLICT`).
+    - Status: `204 No Content` (empty body) with audit event `warehouse.deleted`.

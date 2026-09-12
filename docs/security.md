@@ -60,7 +60,21 @@ It must ensure:
 product.organizationId == actor.organizationId
 ```
 
-and the actor has `products.read`.
+and the actor has `product.read`.
+
+Similarly:
+
+```text
+GET /warehouses/:id
+```
+
+must verify:
+
+```text
+warehouse.organizationId == actor.organizationId
+```
+
+and require `warehouse.read`. Mutations require granular tokens `warehouse.create`, `warehouse.update`, and `warehouse.delete`.
 
 ## CSRF
 

@@ -39,6 +39,36 @@ Do not blindly use JavaScript `number` for business-critical decimal quantities.
 
 Define allowed precision per unit of measure and use a database representation that preserves it exactly.
 
+## Warehouse model
+
+### Warehouse
+
+One row per physical or logical inventory facility owned by an organization:
+
+- `id`: UUID primary key
+- `organizationId`: UUID foreign key referencing Organization (onDelete: Cascade)
+- `name`: String, facility display name
+- `code`: String, normalized uppercase alphanumeric identifier
+- `description`: String? optional overview/details
+- `addressLine1`: String?
+- `addressLine2`: String?
+- `city`: String?
+- `state`: String?
+- `postalCode`: String?
+- `country`: String?
+- `status`: WarehouseStatus enum (`ACTIVE`, `INACTIVE`), default `ACTIVE`
+- `isDefault`: Boolean, default `false` (at most one default per organization)
+- `createdAt`, `updatedAt`: Timestamps
+
+#### Invariants & Constraints:
+
+- `(organizationId, code)` UNIQUE: code must be unique within an organization; same code can exist across different organizations.
+- `(organizationId, name)` UNIQUE: name must be unique within an organization.
+- `(organizationId, id)` UNIQUE: composite key establishing tenant-safe relational integrity for future stock models.
+- Foreign Key: `organizationId` -> `Organization.id` with `ON DELETE CASCADE`.
+- Code Normalization: whitespace trimmed, converted to uppercase alphanumeric (`^[A-Z0-9_-]+$`).
+- Deletion Policy: Deleting default warehouse is prohibited (`409 Conflict`). Deletion cascades when parent Organization is deleted. Future stock balances will restrict deletion via foreign key constraints.
+
 ## Stock model
 
 ### StockBalance
