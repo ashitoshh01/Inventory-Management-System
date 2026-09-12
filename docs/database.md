@@ -6,6 +6,22 @@ PostgreSQL is authoritative. Prisma is the default access layer.
 
 Use normalized tables for transactional data. Add read models/materialized views only when measured reporting performance requires them.
 
+## Database Package Architecture (Phase 1D Foundation)
+
+The authoritative database package is `packages/database`.
+
+- **Package Ownership**: Owns `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.ts`, `PrismaService`, and `PrismaModule`.
+- **Consumer Boundaries**:
+  - `apps/api`: The only application package authorized to consume `@repo/database`.
+  - `apps/web`: **Strictly forbidden** from importing `@repo/database` (enforced via ESLint in `packages/config/eslint.web.mjs`). All web access to database records must flow through HTTP/JSON endpoints.
+- **Canonical Connection**: `DATABASE_URL` (development default: `postgresql://postgres:postgres@localhost:5436/inventory_dev?schema=public`).
+- **Prisma Client Lifecycle**: Singleton `PrismaService` managed by NestJS `OnModuleInit` (`$connect`) and `OnModuleDestroy` (`$disconnect`) via `@Global() PrismaModule`. Eliminates per-request connection churn and prevents leaks.
+- **Migration Commands**:
+  - Development: `pnpm --filter @repo/database prisma:migrate` (`prisma migrate dev`)
+  - Production/CI: `pnpm --filter @repo/database prisma:migrate:deploy` (`prisma migrate deploy`)
+- **Seed Command**: `pnpm --filter @repo/database prisma:seed` (`tsx prisma/seed.ts`)
+- **Domain Scope Note**: At Phase 1D, the schema establishes the datasource and generator foundation with baseline migration tracking. The conceptual models documented below (StockBalance, StockLedgerEntry, etc.) will be created in their respective domain phases.
+
 ## Money
 
 Prefer integer minor units:

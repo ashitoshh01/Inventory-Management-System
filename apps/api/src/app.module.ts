@@ -1,0 +1,24 @@
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { HealthModule } from './modules/health/health.module';
+import { DatabaseModule } from './common/database/database.module';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { StructuredLogger } from './common/logger/structured-logger.service';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
+    }),
+    DatabaseModule,
+    HealthModule,
+  ],
+  providers: [StructuredLogger],
+  exports: [StructuredLogger],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CorrelationIdMiddleware).forRoutes({ path: '*path', method: RequestMethod.ALL });
+  }
+}

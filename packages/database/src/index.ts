@@ -5,9 +5,10 @@
  * - Authoritative persistence configuration only.
  * - Exclusively consumed by apps/api and operational tooling (seed/migrate).
  * - CRITICAL INVARIANT: apps/web must NEVER import from or depend on this package.
- *
- * Prisma schema, migrations, seed routines, and PrismaClient singleton
- * will be implemented in Phase 1F.
  */
+
+export * from '@prisma/client';
+export { PrismaService } from './prisma.service.js';
+export { PrismaModule } from './prisma.module.js';
 
 export const DATABASE_PACKAGE_NAME = '@repo/database';

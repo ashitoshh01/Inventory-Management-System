@@ -14,11 +14,29 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prisma:generate": "dotenv -e ../../.env -c -- prisma generate",
+    "prisma:migrate": "dotenv -e ../../.env -c -- prisma migrate dev",
+    "prisma:migrate:deploy": "dotenv -e ../../.env -c -- prisma migrate deploy",
+    "prisma:status": "dotenv -e ../../.env -c -- prisma migrate status",
+    "prisma:studio": "dotenv -e ../../.env -c -- prisma studio",
+    "prisma:seed": "dotenv -e ../../.env -c -- tsx prisma/seed.ts",
+    "prisma:reset": "echo 'DEVELOPMENT ONLY: running prisma migrate reset' && dotenv -e ../../.env -c -- prisma migrate reset"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.11",
+    "@prisma/client": "^6.4.1"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@types/node": "^22.13.9",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.21.0",
+    "prisma": "^6.4.1",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
 }

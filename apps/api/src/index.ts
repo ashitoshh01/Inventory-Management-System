@@ -1,17 +1,14 @@
 /**
- * Backend API Application Placeholder (@repo/api)
- * NestJS application runtime will be scaffolded in Phase 1C.
+ * Backend API Application (@repo/api)
+ * NestJS application entrypoint and core module exports.
  */
 
-import { DATABASE_PACKAGE_NAME } from '@repo/database';
-import { TYPES_PACKAGE_NAME } from '@repo/types';
+export * from './app.module';
+export * from './common/logger/structured-logger.service';
+export * from './common/filters/all-exceptions.filter';
+export * from './common/interceptors/transform.interceptor';
+export * from './common/interceptors/logging.interceptor';
+export * from './modules/health/health.module';
+export * from './modules/health/health.service';
 
 export const API_APP_NAME = 'api';
-
-export function getApiAppInfo(): { app: string; db: string; types: string } {
-  return {
-    app: API_APP_NAME,
-    db: DATABASE_PACKAGE_NAME,
-    types: TYPES_PACKAGE_NAME,
-  };
-}

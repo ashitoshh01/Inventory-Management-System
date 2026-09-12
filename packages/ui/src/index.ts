@@ -1,15 +1,10 @@
-/**
- * Shared UI Package (@repo/ui)
- * Accessible design primitives and UI components will be implemented in Phase 1D.
- */
+export * from './lib/utils';
 
-import { TYPES_PACKAGE_NAME } from '@repo/types';
-
-export const UI_PACKAGE_NAME = '@repo/ui';
-
-export function getUiPackageInfo(): { name: string; typesPackage: string } {
-  return {
-    name: UI_PACKAGE_NAME,
-    typesPackage: TYPES_PACKAGE_NAME,
-  };
-}
+export * from './components/ui/button';
+export * from './components/ui/input';
+export * from './components/ui/card';
+export * from './components/ui/badge';
+export * from './components/ui/dialog';
+export * from './components/ui/table';
+export * from './components/ui/skeleton';
+export * from './components/ui/empty-state';
