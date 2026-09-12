@@ -9,6 +9,8 @@ export interface PermissionsState {
   canCreateWarehouse: boolean;
   canUpdateWarehouse: boolean;
   canDeleteWarehouse: boolean;
+  canReadStock: boolean;
+  canMutateStock: boolean;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -23,6 +25,8 @@ export function usePermissions(): PermissionsState {
       canCreateWarehouse: true,
       canUpdateWarehouse: true,
       canDeleteWarehouse: true,
+      canReadStock: true,
+      canMutateStock: true,
       hasPermission: () => true,
     };
   }
@@ -37,6 +41,8 @@ export function usePermissions(): PermissionsState {
     'warehouse.create',
     'warehouse.update',
     'warehouse.delete',
+    'stock.read',
+    'stock.mutate',
   ];
   if (stored) {
     try {
@@ -57,6 +63,8 @@ export function usePermissions(): PermissionsState {
     canCreateWarehouse: hasPermission('warehouse.create'),
     canUpdateWarehouse: hasPermission('warehouse.update'),
     canDeleteWarehouse: hasPermission('warehouse.delete'),
+    canReadStock: hasPermission('stock.read'),
+    canMutateStock: hasPermission('stock.mutate'),
     hasPermission,
   };
 }

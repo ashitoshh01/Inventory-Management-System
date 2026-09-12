@@ -299,3 +299,70 @@ Before production:
 - **Frontend Boundary Hardening**:
   - Zero server/database packages (`@repo/database`, `prisma`, `pg`, `redis`) or credentials (`DATABASE_URL`, secrets) are accessible or imported in frontend bundles.
   - Authentication tokens reside solely in HTTP-only, secure, same-site cookies and are never stored in browser `localStorage`.
+
+## Phase 5A Stock & Inventory Security Foundations
+
+- **Engine-Level Cross-Tenant Protection via Composite Foreign Keys**:
+  - `StockBalance` and `StockLedgerEntry` enforce composite foreign keys referencing `(organizationId, productId)` -> `Product(organizationId, id)` and `(organizationId, warehouseId)` -> `Warehouse(organizationId, id)`.
+  - A malicious or buggy caller can never associate a Product from Organization A with a Warehouse from Organization B. The PostgreSQL constraint rejects the operation at the physical database layer.
+- **Ledger Immutability & Audit Safety**:
+  - The stock ledger is append-only. Application domain services provide no update or delete endpoints.
+  - Actor deletion retains historical ledger records via `createdById` with `onDelete: SetNull`. Historical movement audits remain permanent.
+- **Idempotency Multi-Tenant Scoping**:
+  - Idempotency keys are scoped strictly per organization `@@unique([organizationId, idempotencyKey])`. Organization A and Organization B can generate identical idempotency keys without collision or cross-tenant interference.
+- **Zero Endpoint Exposure in Phase 5A**:
+  - Phase 5A introduces database and domain models only. No HTTP routes or controllers are exposed, preventing any unauthorized API attack surface until authenticated mutation routines are built in Phase 5B.
+
+## Phase 5B Stock Mutation Security Guarantees
+
+- **Authoritative Tenant Validation Prior to Mutation**:
+  - `StockMutationService` explicitly verifies that Organization, Product, and Warehouse entities belong strictly to the tenant `organizationId` before entering the transaction. Cross-tenant combinations fail safely with 404 domain exceptions (`PRODUCT_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`), preventing cross-tenant existence enumeration.
+- **Actor Membership Boundary**:
+  - Mutations specifying `actorUserId` must belong to an active `OrganizationMembership` within the target organization; external actors attempting to trigger mutations in another organization are rejected with HTTP 403 `STOCK_ACTOR_NOT_FOUND`.
+- **Negative Stock Protection**:
+  - Mutations attempting to drive inventory negative are strictly rejected, preventing inventory theft, unauthorized negative adjustments, or system drift.
+- **Idempotency Conflict & Replay Protection**:
+  - Replaying an identical request returns the cached result without duplicate execution. Reusing an idempotency key with modified payload fails with HTTP 409 `STOCK_IDEMPOTENCY_CONFLICT`, defeating replay tampering attacks.
+
+## Phase 5C Stock REST API Security Hardening
+
+- **Authoritative RBAC & Endpoint Defense**:
+  - Read endpoints (`/balances*`, `/ledger*`) require authenticated access with `stock.read` permission.
+  - Mutation endpoints (`POST /mutations`) require authenticated access with `stock.mutate` permission. Direct API calls without these permissions are denied at the guard level with HTTP 403 `Forbidden`.
+- **Tenant Context Hardening & Mass Assignment Defense**:
+  - Incoming payloads for mutations and queries never accept `organizationId` or `actorId` from client JSON bodies. Tenant context is derived strictly from `request.activeOrganization.id` verified by `OrganizationGuard`. Actor context is derived strictly from `@CurrentUser()` verified by `JwtAuthGuard`.
+  - Global `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true` rejects attempts to inject `organizationId`, `actorId`, `quantityBefore`, or `quantityAfter` with HTTP 400 `Bad Request`.
+- **String Quantity Exact Decimal Protection**:
+  - Client payloads must provide `quantityDelta` as an exact decimal string. JavaScript floating-point numbers are rejected with HTTP 400 `Bad Request`, eliminating precision loss attacks or numerical truncation vulnerabilities.
+- **Header & Body Idempotency Reconciliation**:
+  - Supports both `Idempotency-Key` header and body `idempotencyKey`. If both are supplied, the controller enforces exact matching; any discrepancy throws HTTP 400 `Bad Request`.
+- **Cross-Tenant IDOR Sanitization**:
+  - Balance detail, balance-by-product, balance-by-warehouse, and ledger detail routes enforce active tenant boundaries. Requesting IDs belonging to other organizations returns HTTP 404 `Not Found`, preventing cross-tenant resource enumeration.
+- **Immutable Ledger Guarantees**:
+  - There are no `PATCH`, `PUT`, or `DELETE` endpoints for ledger records. The ledger API is strictly read-only for historical auditing.
+
+## Phase 5F Stock Security & Adversarial QA Verification
+
+Phase 5F validates the end-to-end security, integrity, and concurrency guarantees of the Stock subsystem under adversarial conditions:
+
+- **Adversarial Tenant Isolation & Header Spoofing**:
+  - Validated across real PostgreSQL and HTTP API tests that an authenticated user in Organization A cannot access balances, ledger records, or scoped inventory in Organization B (returns 404, preventing resource enumeration).
+  - Attempting to spoof `x-organization-id` with another organization's UUID is unconditionally rejected with HTTP 403 `Forbidden`.
+- **IDOR & Path Sanitization**:
+  - Tested random non-existent UUIDs, malformed identifiers, and path traversal attempts across `/stock/balances/:id` and `/stock/ledger/:id`. All non-existent identifiers return 404 uniformly without leaking whether another tenant possesses the resource.
+- **Mass Assignment & Strict String Protocol**:
+  - Proved that injecting protected or authoritative fields (`id`, `organizationId`, `quantityBefore`, `quantityAfter`, `createdAt`, `updatedAt`, `actorId`) results in immediate HTTP 400 rejection via `forbidNonWhitelisted: true`.
+  - Numeric JSON values (`{ "quantityDelta": 10 }`), floating-point numbers, scale > 4, zero values, and non-numeric strings (`NaN`, `Infinity`, `1e5`) are strictly rejected.
+- **Concurrency & Race Invariance (Real PostgreSQL)**:
+  - 10 concurrent requests issuing `-15.0000` against stock `100.0000`: Balance remains `>= 0`, exactly 6 succeed (deducting 90.0000, leaving 10.0000), 4 fail with `StockInsufficientQuantityException`. Zero negative stock, zero lost updates.
+  - 20 concurrent requests issuing `-10.0000` against stock `100.0000`: Balance reaches exactly `0.0000` with 0 lost updates.
+  - First-Balance Race: 10 concurrent requests starting from zero `StockBalance` rows create exactly one row with balance `100.0000` and 10 ledger entries without constraint violations.
+- **Idempotency Race & Multi-Tenant Isolation**:
+  - 20 concurrent identical requests with the same idempotency key result in exactly one balance update and one ledger entry. All callers receive the identical mutation result without double deduction.
+  - Same key with mismatched payload fails with HTTP 409 `STOCK_IDEMPOTENCY_CONFLICT`.
+  - Same key across different organizations executes independently without collision.
+- **Balance ↔ Ledger Mathematical Consistency**:
+  - Verified across Opening, Receipt, Issue, and Adjustment mutations that `quantityAfter = quantityBefore + quantityDelta` holds true for every ledger row, and the sum of all deltas strictly equals the authoritative balance.
+- **Zero Frontend Leakage**:
+  - Verified zero imports of `@repo/database`, `@prisma/client`, `prisma`, `pg`, `postgres`, `redis`, or `ioredis` in `apps/web`.
+  - Verified zero occurrences of `dangerouslySetInnerHTML` in web stock components.

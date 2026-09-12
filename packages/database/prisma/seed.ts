@@ -28,6 +28,8 @@ async function main(): Promise<void> {
       { action: 'warehouse.create', description: 'Create warehouses' },
       { action: 'warehouse.update', description: 'Update warehouses' },
       { action: 'warehouse.delete', description: 'Delete warehouses' },
+      { action: 'stock.read', description: 'View stock balances and ledger history' },
+      { action: 'stock.mutate', description: 'Mutate stock balances' },
     ];
 
     for (const perm of corePermissions) {

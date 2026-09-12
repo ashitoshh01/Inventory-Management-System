@@ -14,22 +14,25 @@ model User {
   isActive     Boolean                  @default(true)
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
-  memberships  OrganizationMembership[]
-  sessions     Session[]
+  memberships               OrganizationMembership[]
+  sessions                  Session[]
+  createdStockLedgerEntries StockLedgerEntry[]
 }
 
 model Organization {
-  id          String                   @id @default(uuid())
-  slug        String                   @unique
-  name        String
-  isActive    Boolean                  @default(true)
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
-  memberships OrganizationMembership[]
-  auditEvents AuditEvent[]
-  categories  Category[]
-  products    Product[]
-  warehouses  Warehouse[]
+  id                 String                   @id @default(uuid())
+  slug               String                   @unique
+  name               String
+  isActive           Boolean                  @default(true)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  memberships        OrganizationMembership[]
+  auditEvents        AuditEvent[]
+  categories         Category[]
+  products           Product[]
+  warehouses         Warehouse[]
+  stockBalances      StockBalance[]
+  stockLedgerEntries StockLedgerEntry[]
 }
 
 model Role {
@@ -147,8 +150,11 @@ model Product {
   updatedAt      DateTime      @updatedAt
 
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category       Category      @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+  category           Category           @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+  stockBalances      StockBalance[]
+  stockLedgerEntries StockLedgerEntry[]
 
+  @@unique([organizationId, id])
   @@unique([organizationId, sku])
   @@index([organizationId])
   @@index([organizationId, categoryId])
@@ -161,23 +167,25 @@ enum WarehouseStatus {
 }
 
 model Warehouse {
-  id             String          @id @default(uuid())
-  organizationId String
-  name           String
-  code           String
-  description    String?
-  addressLine1   String?
-  addressLine2   String?
-  city           String?
-  state          String?
-  postalCode     String?
-  country        String?
-  status         WarehouseStatus @default(ACTIVE)
-  isDefault      Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                 String             @id @default(uuid())
+  organizationId     String
+  name               String
+  code               String
+  description        String?
+  addressLine1       String?
+  addressLine2       String?
+  city               String?
+  state              String?
+  postalCode         String?
+  country            String?
+  status             WarehouseStatus    @default(ACTIVE)
+  isDefault          Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stockBalances      StockBalance[]
+  stockLedgerEntries StockLedgerEntry[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, name])
@@ -187,5 +195,57 @@ model Warehouse {
   @@index([organizationId, createdAt])
 }
 
+enum StockLedgerEntryType {
+  OPENING
+  RECEIPT
+  ISSUE
+  ADJUSTMENT
+}
 
+model StockBalance {
+  id             String       @id @default(uuid())
+  organizationId String
+  productId      String
+  warehouseId    String
+  quantity       Decimal      @default(0) @db.Decimal(14, 4)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product        Product      @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+  warehouse      Warehouse    @relation(fields: [organizationId, warehouseId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, productId, warehouseId])
+  @@index([organizationId])
+  @@index([organizationId, productId])
+  @@index([organizationId, warehouseId])
+}
+
+model StockLedgerEntry {
+  id             String               @id @default(uuid())
+  organizationId String
+  productId      String
+  warehouseId    String
+  quantityDelta  Decimal              @db.Decimal(14, 4)
+  quantityBefore Decimal              @db.Decimal(14, 4)
+  quantityAfter  Decimal              @db.Decimal(14, 4)
+  type           StockLedgerEntryType
+  referenceType  String?
+  referenceId    String?
+  idempotencyKey String?
+  createdById    String?
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product        Product              @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+  warehouse      Warehouse            @relation(fields: [organizationId, warehouseId], references: [organizationId, id], onDelete: Restrict)
+  creator        User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId])
+  @@index([organizationId, productId])
+  @@index([organizationId, warehouseId])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, productId, warehouseId, createdAt])
+}

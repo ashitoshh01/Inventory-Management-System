@@ -299,3 +299,75 @@ Phase 3C completes the REST API layer for Products:
 
 4. **Audit Traceability**:
    - Mutations (`product.created`, `product.updated`, `product.deleted`) log immutable audit records capturing tenant, actor, changed fields, and correlation request IDs.
+
+## Phase 5A Stock & Inventory Database & Domain Foundation
+
+Phase 5A establishes the database and domain foundation for authoritative inventory management:
+
+1. **Dual-Model Architecture**:
+   - `StockBalance`: Current on-hand quantity per `(organizationId, productId, warehouseId)`, protected by a database unique constraint.
+   - `StockLedgerEntry`: Append-only, immutable transaction log tracking all quantity deltas (`quantityBefore`, `quantityDelta`, `quantityAfter`, `type`, `referenceType`, `referenceId`, `idempotencyKey`, `createdById`).
+
+2. **Tenant-Safe Composite Foreign Keys**:
+   - Database-level composite foreign keys link `StockBalance` and `StockLedgerEntry` to `Product(organizationId, id)` and `Warehouse(organizationId, id)`.
+   - Cross-tenant references (e.g. Org A Product with Org B Warehouse) are physically rejected by PostgreSQL.
+
+3. **Exact Decimal Precision**:
+   - Quantities are stored as PostgreSQL `DECIMAL(14, 4)` and enforced at 4-decimal precision via `StockQuantityValidator` and `QuantityUtil`. Floating-point operations are banned.
+
+4. **Ledger Immutability & Architectural Boundaries**:
+   - `StockFoundationService` provides read and append-only operations. No update or delete operations exist.
+   - Strictly NO REST controllers or mutation APIs are implemented in Phase 5A.
+
+5. **Negative Stock Policy**:
+   - Policy is not finalized in Phase 5A and will be established in Phase 5B before stock mutation APIs are exposed.
+
+## Phase 5B Stock Mutation Engine Architecture
+
+Phase 5B introduces the transactional core domain engine for inventory stock mutations:
+
+1. **Transactional Domain Service (`StockMutationService`)**:
+   - Encapsulates inventory state changes (`OPENING`, `RECEIPT`, `ISSUE`, `ADJUSTMENT`) inside interactive PostgreSQL database transactions (`prisma.$transaction`).
+   - Atomically updates `StockBalance` and appends immutable `StockLedgerEntry` records with strict all-or-nothing rollback guarantees.
+
+2. **Concurrency & Locking Mechanics**:
+   - Safe balance initialization via `INSERT ... ON CONFLICT ("organizationId", "productId", "warehouseId") DO NOTHING` eliminates races on nonexistent balances.
+   - Exclusive row locking via `SELECT ... FOR UPDATE` serializes concurrent mutations targeting the same product and warehouse, preventing lost updates.
+   - Bounded transaction retries (up to 3 attempts with exponential jitter) handle transient PostgreSQL serialization/deadlock conflicts safely.
+
+3. **Negative Stock Prohibition**:
+   - Enforces the domain invariant that on-hand stock cannot fall below zero. Mutations resulting in `newQuantity < 0` abort immediately with `StockInsufficientQuantityException`.
+
+4. **Tenant-Scoped Idempotency & Collision Detection**:
+   - Retried identical requests return the existing committed mutation without duplicate writes (`isIdempotentReplay: true`).
+   - Reusing an idempotency key with conflicting mutation payloads is rejected with `StockIdempotencyConflictException`.
+   - Multi-tenant key isolation allows identical idempotency keys across distinct organizations.
+
+5. **Pure Domain Boundary**:
+   - The mutation engine is internal and authoritative, serving as the sole transactional write path for stock in the system.
+
+## Phase 5C Stock REST API Architecture
+
+Phase 5C exposes the production Stock REST API layer conforming to strict separation of concerns:
+
+1. **Thin Controller Protocol Adapter (`StockController`)**:
+   - Acts strictly as an HTTP transport adapter located at `apps/api/src/modules/stock/stock.controller.ts`.
+   - Bounded by `JwtAuthGuard`, `OrganizationGuard`, and `PermissionsGuard`.
+   - Never performs stock arithmetic, database transactions, locking, or balance calculations.
+   - Forwards read queries to `StockFoundationService` and mutation commands to `StockMutationService`.
+
+2. **Route Order Collision Prevention**:
+   - Static/nested routes (`balances/product/:productId`, `balances/warehouse/:warehouseId`) are declared prior to dynamic ID routes (`balances/:id`) to prevent NestJS routing collisions.
+
+3. **Exact Decimal Protocol Enforcement**:
+   - Quantity inputs (`quantityDelta`) and outputs are strictly formatted strings with 4-decimal precision (`toFixed(4)`). JavaScript numbers in payloads are rejected by DTO validators (`IsExactDecimalQuantity`) to prevent floating-point inaccuracy.
+
+4. **Idempotency Transport Contract**:
+   - Supports both `Idempotency-Key` HTTP header and request body `idempotencyKey`, enforcing consistency between them.
+   - First-time executions return HTTP `201 Created`.
+   - Identical retries return HTTP `200 OK` with `isIdempotentReplay: true` and the original response envelope.
+   - Idempotency keys are tenant-isolated in PostgreSQL via `@@unique([organizationId, idempotencyKey])`.
+
+5. **Tenant Isolation & IDOR Protection**:
+   - Context is securely sourced from authenticated membership via `x-organization-id`.
+   - Lookups across tenant boundaries return HTTP `404 Not Found`. Mass assignment of tenant fields is rejected with HTTP `400 Bad Request`.

@@ -23,6 +23,7 @@ describe('WarehousesService (Unit)', () => {
       delete: jest.Mock;
     };
     $transaction: jest.Mock;
+    $executeRaw?: jest.Mock;
   };
   let auditService: {
     logEvent: jest.Mock;

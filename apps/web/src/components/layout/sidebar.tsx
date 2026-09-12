@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Home, Settings, Tags, Warehouse } from 'lucide-react';
+import { Package, Home, Settings, Tags, Warehouse, Boxes } from 'lucide-react';
 
 import { cn } from '@repo/ui';
 
@@ -15,6 +15,7 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
     { name: 'Products', href: '/products', icon: Package, exact: false },
     { name: 'Categories', href: '/categories', icon: Tags, exact: false },
     { name: 'Warehouses', href: '/warehouses', icon: Warehouse, exact: false },
+    { name: 'Stock', href: '/stock', icon: Boxes, exact: false },
     { name: 'Settings', href: '/settings', icon: Settings, exact: false },
   ];
 

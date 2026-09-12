@@ -351,3 +351,77 @@ For inbound webhooks:
     - Tenant isolation: Returns `404 Not Found` on cross-tenant IDOR attempt.
     - Default conflict: Deleting the designated default warehouse returns `409 Conflict` (`WAREHOUSE_DELETE_CONFLICT`).
     - Status: `204 No Content` (empty body) with audit event `warehouse.deleted`.
+
+## Phase 5C Updates — Stock REST API
+
+- **Base Route**: `/api/v1/stock`
+- **Security & Guards**:
+  - `JwtAuthGuard`: Enforces active authenticated session via HttpOnly cookie or Bearer token (`401 Unauthorized`).
+  - `OrganizationGuard`: Enforces membership in tenant specified via `x-organization-id` (`403 Forbidden`).
+  - `PermissionsGuard`: Enforces RBAC permissions:
+    - `stock.read`: Required for all balance and ledger read endpoints.
+    - `stock.mutate`: Required for mutation endpoint.
+- **Exact Decimal Contract**:
+  - Quantities must be passed and returned as exact decimal strings with at most 4 decimal places (e.g. `"10.0000"`, `"-5.2500"`). JavaScript numbers in payloads are rejected with `400 Bad Request`.
+- **Endpoints**:
+  - `GET /api/v1/stock/balances` — List Stock Balances (`stock.read` permission)
+    - Query parameters:
+      - `page`: integer (default: 1)
+      - `limit`: integer (default: 20, max: 100)
+      - `productId`: UUIDv4 filter (optional)
+      - `warehouseId`: UUIDv4 filter (optional)
+      - `sortBy`: string (`quantity` | `createdAt` | `updatedAt` | `productId` | `warehouseId`, default: `createdAt`)
+      - `sortOrder`: `asc` | `desc` (default: `desc`)
+    - Disallowed sort fields return `400 Bad Request`.
+    - Status: `200 OK` with paginated metadata envelope.
+  - `GET /api/v1/stock/balances/product/:productId` — Balances by Product (`stock.read` permission)
+    - Parameter `:productId`: validated as UUIDv4.
+    - Verifies product exists in active organization; returns `404 Not Found` (`PRODUCT_NOT_FOUND`) if nonexistent or cross-tenant.
+    - Status: `200 OK`.
+  - `GET /api/v1/stock/balances/warehouse/:warehouseId` — Balances by Warehouse (`stock.read` permission)
+    - Parameter `:warehouseId`: validated as UUIDv4.
+    - Verifies warehouse exists in active organization; returns `404 Not Found` (`WAREHOUSE_NOT_FOUND`) if nonexistent or cross-tenant.
+    - Status: `200 OK`.
+  - `GET /api/v1/stock/balances/:id` — Balance Detail (`stock.read` permission)
+    - Parameter `:id`: validated as UUIDv4.
+    - Tenant isolation: Returns `404 Not Found` (`STOCK_BALANCE_NOT_FOUND`) on cross-tenant IDOR attempt.
+    - Status: `200 OK`.
+  - `GET /api/v1/stock/ledger` — List Chronological Stock Ledger (`stock.read` permission)
+    - Query parameters:
+      - `page`: integer (default: 1)
+      - `limit`: integer (default: 20, max: 100)
+      - `productId`: UUIDv4 filter (optional)
+      - `warehouseId`: UUIDv4 filter (optional)
+      - `type`: `OPENING` | `RECEIPT` | `ISSUE` | `ADJUSTMENT` (optional)
+      - `sortBy`: string (`createdAt` | `quantityDelta` | `quantityBefore` | `quantityAfter` | `type`, default: `createdAt`)
+      - `sortOrder`: `asc` | `desc` (default: `desc`)
+    - Immutable audit ledger; no update or delete operations are permitted.
+    - Status: `200 OK` with paginated metadata envelope.
+  - `GET /api/v1/stock/ledger/:id` — Ledger Detail (`stock.read` permission)
+    - Parameter `:id`: validated as UUIDv4.
+    - Returns immutable record; cross-tenant requests return `404 Not Found`.
+    - Status: `200 OK`.
+  - `POST /api/v1/stock/mutations` — Execute Stock Mutation (`stock.mutate` permission)
+    - Headers:
+      - `Idempotency-Key`: optional string (alphanumeric, underscores, hyphens, max 100 chars)
+      - `x-organization-id`: required active tenant ID
+    - Body:
+      ```json
+      {
+        "productId": "uuid",
+        "warehouseId": "uuid",
+        "type": "OPENING | RECEIPT | ISSUE | ADJUSTMENT",
+        "quantityDelta": "string (exact decimal, max 4 decimal places, non-zero)",
+        "idempotencyKey": "string (optional, must match header if both provided)",
+        "referenceType": "string (optional, max 50 chars)",
+        "referenceId": "string (optional, max 100 chars)",
+        "metadata": {}
+      }
+      ```
+    - Idempotency reconciliation: If both header and body keys are provided, they must match (`400 Bad Request` on mismatch).
+    - Status:
+      - `201 Created` for first successful mutation (`isIdempotentReplay: false`).
+      - `200 OK` for identical replay (`isIdempotentReplay: true`), without creating duplicate ledger records.
+      - `409 Conflict` (`STOCK_IDEMPOTENCY_CONFLICT`) if key was used with different payload.
+      - `409 Conflict` (`STOCK_INSUFFICIENT_QUANTITY`) if mutation would result in negative stock.
+      - `409 Conflict` (`STOCK_OPENING_INVALID_STATE`) if OPENING is applied to non-zero balance or prior history.

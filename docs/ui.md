@@ -152,3 +152,55 @@ Design from mobile upward, then enhance for desktop. The reference is desktop-he
 
 - All TanStack Query keys are prefixed by active organization ID.
 - `placeholderData: (prev) => prev` preserves previous page data during refetches to avoid blank skeleton flicker.
+
+## Stock Management UI Conventions (Phase 5D)
+
+### Real API-Driven Architecture
+
+- The frontend maintains zero authoritative stock state, zero local balance arithmetic, and zero optimistic calculations.
+- All balance queries read from authoritative backend endpoints (`/stock/balances`, `/stock/balances/:id`, `/stock/balances/product/:productId`, `/stock/balances/warehouse/:warehouseId`).
+- All inventory mutations flow exclusively through `POST /stock/mutations`, backed by the authoritative transactional engine from Phase 5B and REST layer from Phase 5C.
+
+### Exact Decimal Precision
+
+- Stock quantities are strictly treated as strings with up to 4 decimal places (e.g. `"10.0000"`, `"0.0000"`).
+- Client-side code never uses floating-point conversions (`parseFloat`, `Number(q) * 0.1`) that could introduce IEEE 754 precision loss.
+- Zero-quantity stock balances display a distinctive "Zero Stock" badge and muted formatting.
+
+### Two-Phase Stock Mutation Workflow
+
+- **Form Input Step**: Operators select mutation type (`OPENING`, `RECEIPT`, `ISSUE`, `ADJUSTMENT`), target product, target warehouse, and exact decimal quantity. Sign is automatically inferred (RECEIPT/OPENING always positive, ISSUE always negative) or selected (ADJUSTMENT increase/decrease direction).
+- **Confirmation Review Step**: Prior to execution, operators review a summary card displaying target product, target warehouse, operation type, computed signed delta, and generated idempotency key.
+- **Idempotency Contract**: Generates a cryptographically secure UUID (`crypto.randomUUID()`) per mutation session. Propagated via both `Idempotency-Key` header and payload `idempotencyKey`.
+- **Replay Feedback**: When the backend returns `isIdempotentReplay: true`, the UI displays a notification indicating the transaction was previously committed.
+- **Double-Click & Conflict Protection**: Submit action is disabled while `isPending`. Domain conflicts (`INSUFFICIENT_STOCK`, `PRODUCT_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`) map directly to contextual error alerts.
+
+### Tenancy & Cache Scoping
+
+- Query keys are strictly tenant-isolated via `stockKeys.all(currentOrgId)`.
+- Stock mutation execution invalidates all tenant-scoped stock queries (`stockKeys.all(currentOrgId)`), ensuring balance tables across all views refresh automatically.
+
+## Stock Ledger / History UI Conventions (Phase 5E)
+
+### Immutable Historical Audit Record
+
+- The ledger represents an immutable audit log of all stock mutations.
+- The UI strictly enforces read-only access: absolute absence of edit, mutate, reverse, or delete controls across list and detail views.
+- An explicit "Immutable Audit Record" banner on detail views informs operators that ledger entries cannot be altered or deleted.
+
+### Arithmetic Consistency Verification
+
+- Detail views present an exact mathematical breakdown card verifying: `Balance Before + Delta = Balance After`.
+- All quantities and deltas preserve exact decimal string representations with up to 4 decimal places (e.g. `"+10.0000"`, `"-5.2500"`, `"0.0000"`), with zero client-side floating-point conversions.
+
+### Real REST API Integration & Supported Filtering
+
+- Direct integration with Phase 5C endpoints: `GET /stock/ledger` and `GET /stock/ledger/:id`.
+- Supported server-side filters: `productId`, `warehouseId`, `type` (`OPENING`, `RECEIPT`, `ISSUE`, `ADJUSTMENT`).
+- Supported server-side sort fields: `createdAt`, `quantityDelta`, `quantityBefore`, `quantityAfter`, `type`.
+- Unsupported filter boundary: The backend does not support free-text search or arbitrary date range parameters; client-side simulation over full datasets is strictly rejected.
+
+### URL State & Navigation Architecture
+
+- URL search parameters mirror ledger state (`/stock/ledger?productId=...&warehouseId=...&type=...&sortBy=...&sortOrder=...&page=...&limit=...`).
+- Seamless cross-linking between balances and ledger: "View Ledger History" buttons on `/stock` and `/stock/:id` pre-filter the ledger by product and warehouse.

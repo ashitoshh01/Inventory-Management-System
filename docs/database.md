@@ -289,3 +289,70 @@ A backup that has never been restored is not a verified backup.
   - `@@index([organizationId, name])`: Efficient alphabetical sorting and name-based searching.
 - **Migration**:
   - Applied migration: `20260912073700_phase3b_product_foundation`.
+
+## Phase 5A Stock & Inventory Database Foundation
+
+- **Models**:
+  - **`StockLedgerEntryType` Enum**: `OPENING`, `RECEIPT`, `ISSUE`, `ADJUSTMENT`.
+  - **`Product` Model Enhancement**:
+    - Added `@@unique([organizationId, id])` to enable composite foreign key referencing.
+    - Added relation fields: `stockBalances StockBalance[]` and `stockLedgerEntries StockLedgerEntry[]`.
+  - **`Warehouse` Model Enhancement**:
+    - Added relation fields: `stockBalances StockBalance[]` and `stockLedgerEntries StockLedgerEntry[]`.
+  - **`Organization` Model Enhancement**:
+    - Added relation fields: `stockBalances StockBalance[]` and `stockLedgerEntries StockLedgerEntry[]`.
+  - **`StockBalance` Model**:
+    - `id`: String (UUIDv4 primary key)
+    - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+    - `productId`: String
+    - `warehouseId`: String
+    - `quantity`: Decimal (PostgreSQL `DECIMAL(14, 4)`, default `0.0000`)
+    - `createdAt`, `updatedAt`: Timestamps
+    - Constraints:
+      - `@@unique([organizationId, productId, warehouseId])`
+      - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`)
+      - Composite FK to `Warehouse`: `[organizationId, warehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`)
+    - Indexes:
+      - `@@index([organizationId])`
+      - `@@index([organizationId, productId])`
+      - `@@index([organizationId, warehouseId])`
+  - **`StockLedgerEntry` Model**:
+    - `id`: String (UUIDv4 primary key)
+    - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+    - `productId`: String
+    - `warehouseId`: String
+    - `quantityDelta`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `quantityBefore`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `quantityAfter`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `type`: `StockLedgerEntryType` enum
+    - `referenceType`: String? optional reference category
+    - `referenceId`: String? optional reference entity identifier
+    - `idempotencyKey`: String? optional mutation deduplication key
+    - `createdById`: String? FK referencing `User.id` (`onDelete: SetNull`)
+    - `metadata`: Json? optional domain payload
+    - `createdAt`: DateTime (`@default(now())`)
+    - Constraints:
+      - `@@unique([organizationId, idempotencyKey])`
+      - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`)
+      - Composite FK to `Warehouse`: `[organizationId, warehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`)
+      - PostgreSQL Check Constraint: `StockLedgerEntry_delta_nonzero` (`CHECK ("quantityDelta" <> 0)`)
+      - PostgreSQL Check Constraint: `StockLedgerEntry_math_consistent` (`CHECK ("quantityAfter" = "quantityBefore" + "quantityDelta")`)
+    - Indexes:
+      - `@@index([organizationId])`
+      - `@@index([organizationId, productId])`
+      - `@@index([organizationId, warehouseId])`
+      - `@@index([organizationId, createdAt])`
+      - `@@index([organizationId, productId, warehouseId, createdAt])`
+- **Migration**:
+  - Applied migration: `20260912123500_phase5a_stock_foundation`.
+
+## Phase 5B Stock Mutation Engine & Concurrency Locking
+
+- **Database Changes**: None required (The Phase 5A schema, unique constraints, and check constraints fully support all Phase 5B mutation invariants).
+- **Concurrency Execution Model**:
+  - **First-Balance Race Handling**: `INSERT INTO "StockBalance" ... ON CONFLICT ("organizationId", "productId", "warehouseId") DO NOTHING;` guarantees that the balance row exists atomically before locking.
+  - **Row-Level Locking**: `SELECT id, quantity FROM "StockBalance" WHERE ... FOR UPDATE;` prevents concurrent lost updates and serializes all mutations targeting the same product and warehouse facility.
+  - **Atomic Ledger + Balance Updates**: Every mutation executes in a single interactive transaction, maintaining parity between `StockBalance.quantity` and the cumulative sum of `StockLedgerEntry.quantityDelta`.
+- **Idempotency Enforcement**:
+  - `@@unique([organizationId, idempotencyKey])` enforces tenant-scoped deduplication in the database.
+  - Concurrent requests with duplicate keys are handled safely: winning transaction commits; racing duplicate transactions detect existing entry and replay identical response or throw conflict exception.
