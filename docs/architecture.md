@@ -229,3 +229,73 @@ Phase 2B establishes the domain-agnostic foundation layer located at `apps/api/s
 
 4. **Lifecycle State Management**:
    - `StateMachineUtil` enforces finite state machine transitions for domain entities. Invalid transitions reject mutations before persistence.
+
+## Phase 3A Category Foundation
+
+Phase 3A introduces the first tenant-owned business entity within the modular monolith:
+
+1. **Category Domain Module (`CategoriesModule`)**:
+   - Located at `apps/api/src/modules/categories/`.
+   - Imports `PrismaModule` and `AuditModule`.
+   - Organizes business logic in `CategoriesService` and exposes HTTP transport in `CategoriesController`.
+   - Completely separated from future Product/SKU domains.
+
+2. **Tenant Scoping & Multi-Tenancy Architecture**:
+   - `OrganizationGuard` validates active membership in the organization specified by `x-organization-id`.
+   - All category operations (Create, List, Get, Update, Delete) are strictly bounded to `organizationId`.
+   - IDOR protection ensures lookups across tenant boundaries fail safely with `CATEGORY_NOT_FOUND` (HTTP 404).
+
+3. **Granular Authorization**:
+   - Handled server-side by `PermissionsGuard` with `@RequirePermissions(...)`:
+     - `category.read`, `category.create`, `category.update`, `category.delete`.
+
+4. **Event Auditing & Traceability**:
+   - State-changing actions (`category.created`, `category.updated`, `category.deleted`) emit immutable records into `AuditEvent` with sanitized metadata and correlation `requestId`.
+
+## Phase 3B Product Domain & Database Foundation
+
+Phase 3B introduces the central Product business entity foundation within the modular monolith:
+
+1. **Shared Domain Contracts (`@repo/types`)**:
+   - Defines canonical `UnitOfMeasure` and `ProductStatus` string union types and runtime constant value arrays (`UNIT_OF_MEASURE_VALUES`, `PRODUCT_STATUS_VALUES`).
+   - Defines `ProductDto`, `CreateProductInput`, and related domain interfaces consumed by both API and frontend packages.
+
+2. **Product Domain Module (`ProductsModule`)**:
+   - Located at `apps/api/src/modules/products/`.
+   - Imports `PrismaModule` and `AuditModule`.
+   - Encapsulates domain operations inside `ProductsService`.
+   - Strictly contains NO HTTP controllers or routes in Phase 3B; HTTP CRUD transport is cleanly deferred to Phase 3C.
+
+3. **Domain Validation & Invariants (`ProductValidator`)**:
+   - Enforces deterministic SKU normalization: trims whitespace, upper-cases string, enforces character set `[A-Z0-9._-]`, prevents internal whitespace, and caps length at 50 chars.
+   - Enforces name length constraints (1–200 characters) and description constraints (optional, max 1000 characters).
+   - Validates and provides fallback defaults for `UnitOfMeasure` (`UNIT`) and `ProductStatus` (`ACTIVE`).
+
+4. **Database Engine-Level Cross-Tenant Protection**:
+   - Relies on composite foreign key `Product(organizationId, categoryId) -> Category(organizationId, id)` with `ON DELETE RESTRICT`.
+   - Physically guarantees at the PostgreSQL database engine level that no product can link to a category belonging to another tenant.
+
+5. **Lifecycle State Management & Audit Log**:
+   - `ProductsService.updateStatus` manages product state transitions (`ACTIVE` ↔ `INACTIVE`).
+   - Mutations trigger immutable `AuditEvent` logs with `changedFields`, previous status, new status, and actor attribution.
+
+## Phase 3C Product API Architecture
+
+Phase 3C completes the REST API layer for Products:
+
+1. **Thin Controller Layer (`ProductsController`)**:
+   - Handles route definitions (`/api/v1/products`), parameter binding, UUID pipe validation, and guard composition.
+   - Enforces authentication (`JwtAuthGuard`), tenant context (`OrganizationGuard`), and RBAC (`PermissionsGuard`).
+   - Delegates all business logic, query composition, and error handling to `ProductsService`.
+
+2. **DTO Validation & Serialization Layer**:
+   - `CreateProductDto`, `UpdateProductDto`, and `QueryProductDto` provide strict type checking and transformation using `class-validator` and `class-transformer`.
+   - Rejection of unknown properties (`forbidNonWhitelisted: true`) and protected fields (`id`, `organizationId`).
+   - Safe sorting through `validateSortField` prevents column introspection and SQL injection.
+
+3. **Database-Driven Query & Pagination Pipeline**:
+   - Search (`name`, `sku`, `description`), filtering (`categoryId`, `status`, `unitOfMeasure`), and sorting are executed in PostgreSQL using Prisma query builders with parameterized inputs.
+   - Offset pagination (`skip`/`take`) with `count` aggregation returns standard envelope with full pagination metadata.
+
+4. **Audit Traceability**:
+   - Mutations (`product.created`, `product.updated`, `product.deleted`) log immutable audit records capturing tenant, actor, changed fields, and correlation request IDs.

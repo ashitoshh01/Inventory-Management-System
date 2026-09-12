@@ -99,8 +99,38 @@ describe('OrganizationGuard (Unit)', () => {
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
 
-    const req = context.switchToHttp().getRequest<{ activeOrganization: unknown; activeMembership: unknown }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<{ activeOrganization: unknown; activeMembership: unknown }>();
     expect(req.activeOrganization).toEqual(mockMembership.organization);
     expect(req.activeMembership).toEqual(mockMembership);
+  });
+
+  it('should allow access on non-organization endpoints having params.id without mismatch error', async () => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: { 'x-organization-id': 'org-1' },
+          user: { id: 'user-1' },
+          params: { id: 'category-uuid-123' },
+          baseUrl: '/api/v1/categories',
+          activeOrganization: undefined,
+          activeMembership: undefined,
+        }),
+      }),
+    } as unknown as ExecutionContext;
+
+    const mockMembership = {
+      id: 'mem-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      isActive: true,
+      organization: { id: 'org-1', name: 'Acme Corp', isActive: true },
+      role: { id: 'role-1', name: 'Owner', permissions: [] },
+    };
+    mockPrisma.organizationMembership.findUnique.mockResolvedValue(mockMembership);
+
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
   });
 });

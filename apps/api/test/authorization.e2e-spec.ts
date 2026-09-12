@@ -31,12 +31,14 @@ describe('Authorization (e2e)', () => {
     app.setGlobalPrefix('api/v1', {
       exclude: ['health/{*path}', 'api/v1/health/{*path}'],
     });
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    );
     app.useGlobalFilters(new AllExceptionsFilter(logger));
     app.useGlobalInterceptors(new LoggingInterceptor(logger), new TransformInterceptor());
 
@@ -44,10 +46,15 @@ describe('Authorization (e2e)', () => {
     prisma = app.get<PrismaService>(PrismaService);
 
     // Setup Owner & Org
-    const res = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ ...owner, organizationName: 'Authz Org' });
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ ...owner, organizationName: 'Authz Org' });
     orgId = res.body.data.organization.id;
     const login = await request(app.getHttpServer()).post('/api/v1/auth/login').send(owner);
-    ownerToken = login.headers['set-cookie'].find((c: string) => c.startsWith('accessToken=')).split(';')[0].split('=')[1];
+    ownerToken = login.headers['set-cookie']
+      .find((c: string) => c.startsWith('accessToken='))
+      .split(';')[0]
+      .split('=')[1];
 
     // Seed permissions for Owner role
     const ownerRole = await prisma.role.findFirst({ where: { name: 'Owner' } });
@@ -56,8 +63,13 @@ describe('Authorization (e2e)', () => {
       for (const action of perms) {
         let perm = await prisma.permission.findFirst({ where: { action } });
         if (!perm) perm = await prisma.permission.create({ data: { action, description: action } });
-        const exists = await prisma.rolePermission.findFirst({ where: { roleId: ownerRole.id, permissionId: perm.id } });
-        if (!exists) await prisma.rolePermission.create({ data: { roleId: ownerRole.id, permissionId: perm.id } });
+        const exists = await prisma.rolePermission.findFirst({
+          where: { roleId: ownerRole.id, permissionId: perm.id },
+        });
+        if (!exists)
+          await prisma.rolePermission.create({
+            data: { roleId: ownerRole.id, permissionId: perm.id },
+          });
       }
     }
   });
@@ -84,16 +96,24 @@ describe('Authorization (e2e)', () => {
   it('Member without manage permission is denied', async () => {
     // Create a read-only role
     let memberRole = await prisma.role.findFirst({ where: { name: 'Member' } });
-    if (!memberRole) memberRole = await prisma.role.create({ data: { name: 'Member', description: 'Read Only' } });
+    if (!memberRole)
+      memberRole = await prisma.role.create({ data: { name: 'Member', description: 'Read Only' } });
     const readPerm = await prisma.permission.findFirst({ where: { action: 'organization.read' } });
     if (readPerm) {
-      const exists = await prisma.rolePermission.findFirst({ where: { roleId: memberRole.id, permissionId: readPerm.id } });
-      if (!exists) await prisma.rolePermission.create({ data: { roleId: memberRole.id, permissionId: readPerm.id } });
+      const exists = await prisma.rolePermission.findFirst({
+        where: { roleId: memberRole.id, permissionId: readPerm.id },
+      });
+      if (!exists)
+        await prisma.rolePermission.create({
+          data: { roleId: memberRole.id, permissionId: readPerm.id },
+        });
     }
 
     // Create member user
     const member = { email: `member-${Date.now()}@test.com`, password: 'Password123!' };
-    const memberRes = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ ...member, organizationName: 'Temp Org' });
+    const memberRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ ...member, organizationName: 'Temp Org' });
     const memberUserId = memberRes.body.data.user.id;
 
     // Add to Org as read-only member
@@ -102,7 +122,10 @@ describe('Authorization (e2e)', () => {
     });
 
     const memberLogin = await request(app.getHttpServer()).post('/api/v1/auth/login').send(member);
-    const memberToken = memberLogin.headers['set-cookie'].find((c: string) => c.startsWith('accessToken=')).split(';')[0].split('=')[1];
+    const memberToken = memberLogin.headers['set-cookie']
+      .find((c: string) => c.startsWith('accessToken='))
+      .split(';')[0]
+      .split('=')[1];
 
     // Member can read
     await request(app.getHttpServer())
@@ -136,17 +159,21 @@ describe('Authorization (e2e)', () => {
   it('verifies audit events are generated correctly and sensitive values are redacted', async () => {
     const auditEvents = await prisma.auditEvent.findMany({
       where: {
-        OR: [
-          { organizationId: orgId },
-          { actorUserId: { not: null } },
-        ],
+        OR: [{ organizationId: orgId }, { actorUserId: { not: null } }],
       },
     });
 
     expect(auditEvents.length).toBeGreaterThan(0);
 
     // Verify all audit events have redacted sensitive keys
-    const sensitiveTerms = ['password', 'secret', 'token', 'database_url', 'authorization', 'cookie'];
+    const sensitiveTerms = [
+      'password',
+      'secret',
+      'token',
+      'database_url',
+      'authorization',
+      'cookie',
+    ];
     for (const event of auditEvents) {
       if (event.metadata && typeof event.metadata === 'object') {
         const str = JSON.stringify(event.metadata).toLowerCase();

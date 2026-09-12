@@ -14,7 +14,9 @@ export class AuditService {
     metadata?: Record<string, unknown>;
     requestId?: string;
   }): Promise<unknown> {
-    const sanitizedMetadata = params.metadata ? (this.sanitize(params.metadata) as Record<string, unknown>) : undefined;
+    const sanitizedMetadata = params.metadata
+      ? (this.sanitize(params.metadata) as Record<string, unknown>)
+      : undefined;
 
     return this.prisma.auditEvent.create({
       data: {
@@ -28,14 +30,21 @@ export class AuditService {
     if (!obj || typeof obj !== 'object') return obj;
 
     if (Array.isArray(obj)) {
-      return (obj.map(item => this.sanitize(item)) as unknown) as T;
+      return obj.map((item) => this.sanitize(item)) as unknown as T;
     }
 
     const result: Record<string, unknown> = {};
-    const sensitiveKeys = ['password', 'token', 'secret', 'authorization', 'cookie', 'database_url'];
+    const sensitiveKeys = [
+      'password',
+      'token',
+      'secret',
+      'authorization',
+      'cookie',
+      'database_url',
+    ];
 
     for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-      if (sensitiveKeys.some(sk => k.toLowerCase().includes(sk))) {
+      if (sensitiveKeys.some((sk) => k.toLowerCase().includes(sk))) {
         result[k] = '[REDACTED]';
       } else if (typeof v === 'object' && v !== null) {
         result[k] = this.sanitize(v);
@@ -46,4 +55,3 @@ export class AuditService {
     return result as T;
   }
 }
-

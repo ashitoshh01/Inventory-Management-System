@@ -31,10 +31,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (res.data.user) {
         setUser(res.data.user);
         setMemberships(res.data.memberships);
-        
+
         // Auto-select active org if not set
         const storedOrgId = localStorage.getItem('activeOrganizationId');
-        if (storedOrgId && res.data.memberships.some(m => m.organizationId === storedOrgId)) {
+        if (storedOrgId && res.data.memberships.some((m) => m.organizationId === storedOrgId)) {
           setActiveOrgId(storedOrgId);
         } else if (res.data.memberships && res.data.memberships.length > 0) {
           const firstOrgId = res.data.memberships[0]?.organizationId;

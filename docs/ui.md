@@ -120,3 +120,35 @@ Minimum:
 ## Responsive behavior
 
 Design from mobile upward, then enhance for desktop. The reference is desktop-heavy, but real users may use tablets or phones in warehouses.
+
+## Product Management UX Conventions (Phase 3E)
+
+### URL State Architecture
+
+- URL search parameters mirror the active list state (`/products?search=...&categoryId=...&status=...&unitOfMeasure=...&sortBy=...&sortOrder=...&page=...&limit=...`).
+- Browser refresh, back, and forward navigation automatically restore state.
+- Updating search, filters, or sort criteria resets `page` to 1.
+- Synchronized using shallow Next.js `router.replace` with `scroll: false` to avoid layout jumping or duplicate history stacks.
+
+### Search & Debounce
+
+- 300ms debounce prevents excessive API calls during typing.
+- Dedicated clear button and Escape key immediately reset search.
+- Empty states clearly differentiate between an empty organization catalog vs. no search/filter matches.
+
+### Sorting UX & Accessibility
+
+- Supported backend sort fields: `sku`, `name`, `unitOfMeasure`, `status`, `createdAt`.
+- Sort headers are keyboard interactive (`tabIndex={0}`, Enter / Space triggers) and expose `aria-sort="ascending" | "descending" | "none"`.
+- Directional arrow indicators reflect current sort state.
+
+### Pagination & Auto-Recovery
+
+- Displayed as `Showing X–Y of Z results` using standard en-dash.
+- Direct page buttons provide quick jumping with `aria-current="page"`.
+- If an item deletion shrinks total pages below the current active page, the page automatically recovers to the highest valid page (`Math.max(1, totalPages)`).
+
+### Cache & Tenancy Strategy
+
+- All TanStack Query keys are prefixed by active organization ID.
+- `placeholderData: (prev) => prev` preserves previous page data during refetches to avoid blank skeleton flicker.

@@ -195,10 +195,12 @@ Production database:
 A backup that has never been restored is not a verified backup.
 
 ## Phase 2A Schema Updates
+
 - Added models for Multi-tenancy and Identity: `User`, `Organization`, `OrganizationMembership`, `Role`, `Permission`, `RolePermission`, `Session`, `AuditEvent`.
 - Uses UUIDs for primary keys and establishes strict relational boundaries.
 
 ## Phase 2B Core Domain Conventions
+
 - **Organization Ownership**: All tenant-scoped entities feature `organizationId` foreign keys directly referencing `Organization.id`. Single-record lookups must always scope by `where: { id, organizationId }` to prevent tenant leaks.
 - **Identifier Strategy**: All table primary keys are standard RFC 4122 UUIDv4 strings (`@id @default(uuid())`).
 - **Timestamp Strategy**: Timezone-aware PostgreSQL `TIMESTAMPTZ` via Prisma `DateTime @default(now())` and `@updatedAt`.
@@ -206,3 +208,54 @@ A backup that has never been restored is not a verified backup.
 - **Inventory Quantities**: Stored as exact PostgreSQL `DECIMAL(14, 4)` to support fractional unit measurements (up to 4 decimal places) without float drift.
 - **Soft Deletion Policy**: Applied only where historical/audit records link to the entity (e.g. products, suppliers). Entities have `deletedAt DateTime?`. Active filters (`where: { deletedAt: null }`) are strictly enforced. Append-only ledger or audit events are never soft-deleted.
 
+## Phase 3A Category Foundation
+
+- **Model**: `Category`
+  - `id`: String (UUIDv4 primary key `@default(uuid())`)
+  - `organizationId`: String (Foreign key referencing `Organization.id` with `onDelete: Cascade`)
+  - `name`: String (Required, trimmed, max 100 characters)
+  - `description`: String? (Optional, trimmed, max 500 characters)
+  - `createdAt`: DateTime (`@default(now())`)
+  - `updatedAt`: DateTime (`@updatedAt`)
+- **Uniqueness**:
+  - Composite unique constraint: `@@unique([organizationId, name])`.
+  - Application-level case-insensitive duplicate validation via Prisma `mode: 'insensitive'` to prevent duplicate casing collisions (e.g. "Electronics" vs "electronics") within an organization while permitting identical names across different organizations.
+- **Indexes**:
+  - `@@index([organizationId])` for fast tenant-scoped queries.
+  - `@@index([organizationId, createdAt])` for deterministic paginated listing.
+  - `@@unique([organizationId, name])` implicitly creates a btree index on `(organizationId, name)`.
+- **Deletion Policy**:
+  - Hard delete with referential integrity.
+
+## Phase 3B Product Domain & Database Foundation
+
+- **Models**:
+  - **`UnitOfMeasure` Enum**: `UNIT`, `KG`, `G`, `L`, `ML`, `M`, `CM`, `BOX`, `PACK`.
+  - **`ProductStatus` Enum**: `ACTIVE`, `INACTIVE`.
+  - **`Category` Model Enhancement**:
+    - Added `@@unique([organizationId, id])` to enable composite foreign key referencing.
+    - Added relation field: `products Product[]`.
+  - **`Product` Model**:
+    - `id`: String (UUIDv4 primary key `@default(uuid())`)
+    - `organizationId`: String (Foreign key referencing `Organization.id` with `onDelete: Cascade`)
+    - `categoryId`: String (Foreign key referencing `Category.id`)
+    - `name`: String (Required, trimmed, max 200 characters)
+    - `sku`: String (Required, trimmed, normalized uppercase, max 50 characters)
+    - `description`: String? (Optional, trimmed, max 1000 characters)
+    - `unitOfMeasure`: `UnitOfMeasure` enum (Default: `UNIT`)
+    - `status`: `ProductStatus` enum (Default: `ACTIVE`)
+    - `createdAt`: DateTime (`@default(now())`)
+    - `updatedAt`: DateTime (`@updatedAt`)
+- **Foreign Key Referential Integrity**:
+  - **Organization Relation**: `fields: [organizationId], references: [id], onDelete: Cascade`.
+  - **Composite Category Relation**: `fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict`.
+    - _Cross-Tenant Protection_: Because the foreign key is composite across `(organizationId, categoryId)`, PostgreSQL engine-level constraints reject any product referencing a category belonging to a different tenant (`Product_organizationId_categoryId_fkey`).
+    - _Category Deletion Protection_: `onDelete: Restrict` ensures that attempting to delete a category that contains products fails with a referential integrity violation (`P2003`).
+- **Uniqueness & Indexes**:
+  - `@@unique([organizationId, sku])`: Enforces SKU uniqueness strictly per organization. Different organizations can safely utilize identical SKU numbers without collisions.
+  - `@@index([organizationId])`: Fast filtering for tenant-scoped operations.
+  - `@@index([organizationId, categoryId])`: Optimized queries filtering products by category within a tenant.
+  - `@@index([organizationId, status])`: Optimized listing by active/inactive lifecycle state.
+  - `@@index([organizationId, name])`: Efficient alphabetical sorting and name-based searching.
+- **Migration**:
+  - Applied migration: `20260912073700_phase3b_product_foundation`.

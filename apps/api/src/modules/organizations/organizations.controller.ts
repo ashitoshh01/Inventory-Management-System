@@ -37,7 +37,11 @@ export class OrganizationsController {
   @Patch(':id')
   @UseGuards(OrganizationGuard, PermissionsGuard)
   @RequirePermissions('organization.manage')
-  async update(@Param('id') id: string, @CurrentUser() user: User, @Body() dto: UpdateOrganizationDto) {
+  async update(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Body() dto: UpdateOrganizationDto,
+  ) {
     const org = await this.orgsService.update(id, user.id, dto);
     return org;
   }

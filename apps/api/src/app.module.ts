@@ -8,6 +8,8 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { CoreModule } from './modules/core/core.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { CoreModule } from './modules/core/core.module';
     AuditModule,
     AuthModule,
     OrganizationsModule,
+    CategoriesModule,
+    ProductsModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

@@ -12,7 +12,10 @@ describe('PermissionsGuard (Unit)', () => {
     guard = new PermissionsGuard(reflector);
   });
 
-  const createMockContext = (activeMembership: unknown, routePermissions: string[] | null = null): ExecutionContext => {
+  const createMockContext = (
+    activeMembership: unknown,
+    routePermissions: string[] | null = null,
+  ): ExecutionContext => {
     const request = {
       activeMembership,
     };
@@ -48,9 +51,7 @@ describe('PermissionsGuard (Unit)', () => {
       role: {
         id: 'role-member',
         name: 'Member',
-        permissions: [
-          { permission: { action: 'organization.read' } },
-        ],
+        permissions: [{ permission: { action: 'organization.read' } }],
       },
     };
 

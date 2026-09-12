@@ -13,6 +13,7 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
 }
-export * from "./auth.js";
-export * from "./domain.js";
-
+export * from './auth.js';
+export * from './domain.js';
+export * from './category.js';
+export * from './product.js';

@@ -7,7 +7,7 @@ import { useAuth } from '../../components/providers/AuthProvider';
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [organizationName, setOrganizationName] = useState('');
@@ -39,14 +39,12 @@ export default function RegisterPage() {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">{error}</div>}
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="organization-name" className="sr-only">Organization Name</label>
+              <label htmlFor="organization-name" className="sr-only">
+                Organization Name
+              </label>
               <input
                 id="organization-name"
                 name="organizationName"
@@ -59,7 +57,9 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <label htmlFor="email-address" className="sr-only">
+                Email address
+              </label>
               <input
                 id="email-address"
                 name="email"
@@ -73,7 +73,9 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">Password</label>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
               <input
                 id="password"
                 name="password"
@@ -97,7 +99,7 @@ export default function RegisterPage() {
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
-          
+
           <div className="text-sm text-center">
             <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
               Already have an account? Sign in

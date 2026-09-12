@@ -80,7 +80,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         case 'P2003':
           status = HttpStatus.BAD_REQUEST;
           code = 'FOREIGN_KEY_VIOLATION';
-          message = 'Referenced resource does not exist or operation violates relational constraints.';
+          message =
+            'Referenced resource does not exist or operation violates relational constraints.';
           break;
         default:
           status = HttpStatus.INTERNAL_SERVER_ERROR;

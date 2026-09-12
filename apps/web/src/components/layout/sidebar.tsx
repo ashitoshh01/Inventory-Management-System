@@ -1,10 +1,22 @@
+'use client';
+
 import * as React from 'react';
 import Link from 'next/link';
-import { Package, Home, Settings } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Package, Home, Settings, Tags } from 'lucide-react';
 
 import { cn } from '@repo/ui';
 
 export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
+  const pathname = usePathname();
+
+  const navigation = [
+    { name: 'Dashboard', href: '/', icon: Home, exact: true },
+    { name: 'Products', href: '/products', icon: Package, exact: false },
+    { name: 'Categories', href: '/categories', icon: Tags, exact: false },
+    { name: 'Settings', href: '/settings', icon: Settings, exact: false },
+  ];
+
   return (
     <div
       className={cn(
@@ -17,29 +29,30 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-sidebar-foreground">
             Inventory
           </h2>
-          <div className="space-y-1">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              <Home className="h-4 w-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              <Package className="h-4 w-4" />
-              Products
-            </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
-          </div>
+          <nav className="space-y-1">
+            {navigation.map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
     </div>

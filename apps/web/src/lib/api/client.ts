@@ -22,7 +22,11 @@ export interface ApiResponse<T> {
     requestId: string;
     page?: number;
     pageSize?: number;
+    limit?: number;
     total?: number;
+    totalPages?: number;
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
   };
 }
 
@@ -53,7 +57,7 @@ export const apiClient = async <T>(
   if (!headers.has('x-request-id')) {
     headers.set('x-request-id', requestId);
   }
-  
+
   if (typeof window !== 'undefined') {
     const orgId = localStorage.getItem('activeOrganizationId');
     if (orgId && !headers.has('x-organization-id')) {

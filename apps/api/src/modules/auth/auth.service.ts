@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from '@repo/database';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -50,7 +55,9 @@ export class AuthService {
 
         let ownerRole = await tx.role.findFirst({ where: { name: 'Owner' } });
         if (!ownerRole) {
-          ownerRole = await tx.role.create({ data: { name: 'Owner', description: 'Organization Owner' } });
+          ownerRole = await tx.role.create({
+            data: { name: 'Owner', description: 'Organization Owner' },
+          });
         }
 
         const _membership = await tx.organizationMembership.create({
@@ -100,7 +107,9 @@ export class AuthService {
     }
   }
 
-  async login(dto: LoginDto): Promise<{ user: UserDto; accessToken: string; refreshToken: string }> {
+  async login(
+    dto: LoginDto,
+  ): Promise<{ user: UserDto; accessToken: string; refreshToken: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
@@ -158,7 +167,9 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  async refreshSession(refreshToken: string): Promise<{ user: UserDto; accessToken: string; refreshToken: string }> {
+  async refreshSession(
+    refreshToken: string,
+  ): Promise<{ user: UserDto; accessToken: string; refreshToken: string }> {
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }

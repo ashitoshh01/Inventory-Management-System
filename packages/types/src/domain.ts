@@ -5,10 +5,10 @@
 export type SortOrder = 'asc' | 'desc';
 
 export interface PaginationParams {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: SortOrder;
+  page?: number | undefined;
+  limit?: number | undefined;
+  sortBy?: string | undefined;
+  sortOrder?: SortOrder | undefined;
 }
 
 export interface PaginationMeta {

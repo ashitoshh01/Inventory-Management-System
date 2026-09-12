@@ -13,16 +13,16 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromCookie(request);
-    
+
     if (!token) {
       throw new UnauthorizedException('Authentication token missing');
     }
-    
+
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.AUTH_SECRET as string,
       });
-      
+
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });

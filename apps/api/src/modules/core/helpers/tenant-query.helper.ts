@@ -15,7 +15,9 @@ export class TenantQueryHelper {
     organizationId: string,
   ): T & { organizationId: string } {
     if (!organizationId || typeof organizationId !== 'string' || organizationId.trim() === '') {
-      throw new BadRequestException('Organization context is required for tenant-scoped operations');
+      throw new BadRequestException(
+        'Organization context is required for tenant-scoped operations',
+      );
     }
 
     return {

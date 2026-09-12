@@ -38,12 +38,14 @@ describe('AuthModule (e2e)', () => {
     app.setGlobalPrefix('api/v1', {
       exclude: ['health/{*path}', 'api/v1/health/{*path}'],
     });
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    );
     app.useGlobalFilters(new AllExceptionsFilter(logger));
     app.useGlobalInterceptors(new LoggingInterceptor(logger), new TransformInterceptor());
 
@@ -53,7 +55,9 @@ describe('AuthModule (e2e)', () => {
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.organizationMembership.deleteMany({ where: { user: { email: testUser.email } } });
+      await prisma.organizationMembership.deleteMany({
+        where: { user: { email: testUser.email } },
+      });
       await prisma.auditEvent.deleteMany({ where: { actorUserId: { not: null } } });
       await prisma.session.deleteMany({ where: { user: { email: testUser.email } } });
       await prisma.user.deleteMany({ where: { email: testUser.email } });
@@ -94,10 +98,7 @@ describe('AuthModule (e2e)', () => {
   });
 
   it('/api/v1/auth/register (POST) - rejects duplicate email', async () => {
-    await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send(testUser)
-      .expect(400);
+    await request(app.getHttpServer()).post('/api/v1/auth/register').send(testUser).expect(400);
   });
 
   it('/api/v1/auth/login (POST) - fails with invalid credentials', async () => {
@@ -172,9 +173,7 @@ describe('AuthModule (e2e)', () => {
   });
 
   it('/api/v1/auth/me (GET) - rejects unauthenticated requests', async () => {
-    await request(app.getHttpServer())
-      .get('/api/v1/auth/me')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
   });
 
   it('/api/v1/auth/refresh (POST) - rotates refresh token and issues new session', async () => {

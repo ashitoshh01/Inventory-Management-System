@@ -117,7 +117,9 @@ describe('AllExceptionsFilter (Unit)', () => {
   });
 
   it('should mask unhandled errors as generic 500 without leaking stack traces or internal secrets', () => {
-    const secretError = new Error('Database password was incorrect in connection string: postgres://postgres:pwd@db');
+    const secretError = new Error(
+      'Database password was incorrect in connection string: postgres://postgres:pwd@db',
+    );
 
     filter.catch(secretError, mockHost);
 

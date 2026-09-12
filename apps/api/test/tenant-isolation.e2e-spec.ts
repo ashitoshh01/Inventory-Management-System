@@ -33,12 +33,14 @@ describe('Tenant Isolation (e2e)', () => {
     app.setGlobalPrefix('api/v1', {
       exclude: ['health/{*path}', 'api/v1/health/{*path}'],
     });
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    );
     app.useGlobalFilters(new AllExceptionsFilter(logger));
     app.useGlobalInterceptors(new LoggingInterceptor(logger), new TransformInterceptor());
 
@@ -46,21 +48,32 @@ describe('Tenant Isolation (e2e)', () => {
     prisma = app.get<PrismaService>(PrismaService);
 
     // Setup User A & Org A
-    const resA = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ ...userA, organizationName: 'Org A' });
+    const resA = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ ...userA, organizationName: 'Org A' });
     orgAId = resA.body.data.organization.id;
     const loginA = await request(app.getHttpServer()).post('/api/v1/auth/login').send(userA);
-    userAToken = loginA.headers['set-cookie'].find((c: string) => c.startsWith('accessToken=')).split(';')[0].split('=')[1];
+    userAToken = loginA.headers['set-cookie']
+      .find((c: string) => c.startsWith('accessToken='))
+      .split(';')[0]
+      .split('=')[1];
 
     // Setup User B & Org B
-    const resB = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ ...userB, organizationName: 'Org B' });
+    const resB = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ ...userB, organizationName: 'Org B' });
     orgBId = resB.body.data.organization.id;
   });
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.organizationMembership.deleteMany({ where: { user: { email: { in: [userA.email, userB.email] } } } });
+      await prisma.organizationMembership.deleteMany({
+        where: { user: { email: { in: [userA.email, userB.email] } } },
+      });
       await prisma.auditEvent.deleteMany({});
-      await prisma.session.deleteMany({ where: { user: { email: { in: [userA.email, userB.email] } } } });
+      await prisma.session.deleteMany({
+        where: { user: { email: { in: [userA.email, userB.email] } } },
+      });
       await prisma.user.deleteMany({ where: { email: { in: [userA.email, userB.email] } } });
     }
     if (app) await app.close();

@@ -1,6 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '@repo/database';
-import { CreateOrganizationDto, UpdateOrganizationDto, CreateMembershipDto, UpdateMembershipDto } from './dto/organizations.dto';
+import {
+  CreateOrganizationDto,
+  UpdateOrganizationDto,
+  CreateMembershipDto,
+  UpdateMembershipDto,
+} from './dto/organizations.dto';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 
@@ -13,7 +23,7 @@ export class OrganizationsService {
 
   async create(userId: string, dto: CreateOrganizationDto) {
     const slug = `${dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${randomBytes(4).toString('hex')}`;
-    
+
     return this.prisma.$transaction(async (tx) => {
       const org = await tx.organization.create({
         data: { name: dto.name, slug },
@@ -21,7 +31,9 @@ export class OrganizationsService {
 
       let ownerRole = await tx.role.findFirst({ where: { name: 'Owner' } });
       if (!ownerRole) {
-        ownerRole = await tx.role.create({ data: { name: 'Owner', description: 'Organization Owner' } });
+        ownerRole = await tx.role.create({
+          data: { name: 'Owner', description: 'Organization Owner' },
+        });
       }
 
       await tx.organizationMembership.create({
@@ -118,7 +130,12 @@ export class OrganizationsService {
     return membership;
   }
 
-  async updateMember(orgId: string, memberId: string, actorUserId: string, dto: UpdateMembershipDto) {
+  async updateMember(
+    orgId: string,
+    memberId: string,
+    actorUserId: string,
+    dto: UpdateMembershipDto,
+  ) {
     const membership = await this.prisma.organizationMembership.findFirst({
       where: { id: memberId, organizationId: orgId },
     });

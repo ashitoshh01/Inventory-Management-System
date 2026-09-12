@@ -9,7 +9,10 @@ export class QuantityUtil {
   /**
    * Converts a quantity into a scaled integer (e.g., 1.5000 with precision 4 -> 15000n).
    */
-  static toScaledInteger(quantity: number | string, precision = QuantityUtil.DEFAULT_PRECISION): bigint {
+  static toScaledInteger(
+    quantity: number | string,
+    precision = QuantityUtil.DEFAULT_PRECISION,
+  ): bigint {
     const raw = typeof quantity === 'number' ? quantity.toString() : quantity.trim();
     if (!raw || isNaN(Number(raw))) {
       throw new Error(`Invalid quantity value: "${quantity}"`);
@@ -29,7 +32,10 @@ export class QuantityUtil {
   /**
    * Converts a scaled integer back into a standardized 4-decimal string.
    */
-  static fromScaledInteger(scaled: bigint | number | string, precision = QuantityUtil.DEFAULT_PRECISION): string {
+  static fromScaledInteger(
+    scaled: bigint | number | string,
+    precision = QuantityUtil.DEFAULT_PRECISION,
+  ): string {
     const raw = BigInt(scaled).toString();
     const isNegative = raw.startsWith('-');
     const digits = isNegative ? raw.slice(1) : raw;
@@ -103,7 +109,10 @@ export class QuantityUtil {
   /**
    * Checks whether a quantity is strictly greater than zero.
    */
-  static isPositive(quantity: number | string, precision = QuantityUtil.DEFAULT_PRECISION): boolean {
+  static isPositive(
+    quantity: number | string,
+    precision = QuantityUtil.DEFAULT_PRECISION,
+  ): boolean {
     return this.toScaledInteger(quantity, precision) > 0n;
   }
 

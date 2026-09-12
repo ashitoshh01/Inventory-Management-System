@@ -27,6 +27,8 @@ model Organization {
   updatedAt   DateTime                 @updatedAt
   memberships OrganizationMembership[]
   auditEvents AuditEvent[]
+  categories  Category[]
+  products    Product[]
 }
 
 model Role {
@@ -96,3 +98,60 @@ model AuditEvent {
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 }
+
+model Category {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products       Product[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+}
+
+enum UnitOfMeasure {
+  UNIT
+  KG
+  G
+  L
+  ML
+  M
+  CM
+  BOX
+  PACK
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  organizationId String
+  categoryId     String
+  name           String
+  sku            String
+  description    String?
+  unitOfMeasure  UnitOfMeasure @default(UNIT)
+  status         ProductStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       Category      @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, categoryId])
+  @@index([organizationId, createdAt])
+}
+
+

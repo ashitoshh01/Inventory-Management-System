@@ -51,9 +51,7 @@ describe('Core Domain Foundation (e2e)', () => {
     prisma = app.get<PrismaService>(PrismaService);
 
     // Register test user and org
-    const regRes = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send(testUser);
+    const regRes = await request(app.getHttpServer()).post('/api/v1/auth/register').send(testUser);
 
     orgId = regRes.body.data.organization.id;
 
@@ -69,7 +67,9 @@ describe('Core Domain Foundation (e2e)', () => {
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.organizationMembership.deleteMany({ where: { user: { email: testUser.email } } });
+      await prisma.organizationMembership.deleteMany({
+        where: { user: { email: testUser.email } },
+      });
       await prisma.auditEvent.deleteMany({ where: { actorUserId: { not: null } } });
       await prisma.session.deleteMany({ where: { user: { email: testUser.email } } });
       await prisma.user.deleteMany({ where: { email: testUser.email } });

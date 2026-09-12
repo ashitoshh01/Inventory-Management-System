@@ -11,24 +11,28 @@ export class PermissionsGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     if (!requiredPermissions || requiredPermissions.length === 0) {
       return true; // No permissions required
     }
-    
+
     const request = context.switchToHttp().getRequest();
     const activeMembership = request.activeMembership;
-    
+
     if (!activeMembership || !activeMembership.role || !activeMembership.role.permissions) {
       throw new ForbiddenException('No active membership or role found');
     }
 
-    const userPermissions = activeMembership.role.permissions.map((rp: { permission: { action: string } }) => rp.permission.action);
+    const userPermissions = activeMembership.role.permissions.map(
+      (rp: { permission: { action: string } }) => rp.permission.action,
+    );
 
     const hasAllRequired = requiredPermissions.every((perm) => userPermissions.includes(perm));
-    
+
     if (!hasAllRequired) {
-      throw new ForbiddenException(`Missing required permissions: ${requiredPermissions.join(', ')}`);
+      throw new ForbiddenException(
+        `Missing required permissions: ${requiredPermissions.join(', ')}`,
+      );
     }
 
     return true;
