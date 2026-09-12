@@ -9,5 +9,8 @@
     "./eslint.web.mjs": "./eslint.web.mjs",
     "./prettier.config.mjs": "./prettier.config.mjs",
     "./tailwind.config": "./tailwind.config.ts"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
   }
 }
