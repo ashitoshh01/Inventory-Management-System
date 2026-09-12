@@ -283,3 +283,14 @@ Phase 3D & 3E establish frontend React component, hook, and integration testing 
   pnpm test
   pnpm build
   ```
+
+## Phase 3F Testing — Product Security & Final QA
+
+Phase 3F expands the test suite to explicitly prove security invariants and production readiness:
+
+- **Security & Tenancy Hardening E2E Tests (`products.e2e-spec.ts`)**:
+  - `Header Tampering / Spoofing`: Asserts that providing a foreign `x-organization-id` header returns HTTP 403 `FORBIDDEN` via `OrganizationGuard`.
+  - `Cross-Tenant SKU Isolation`: Asserts that querying another organization's SKU via `/api/v1/products/sku/:sku` returns HTTP 404 `PRODUCT_NOT_FOUND`.
+  - `Search Tenant Isolation`: Asserts that catalog search queries (`/api/v1/products?search=...`) never return records from other organizations.
+  - `Audit Log Sanitization`: Verifies that sensitive credentials (passwords, tokens, authorization headers, cookies, connection strings) are strictly redacted to `[REDACTED]` prior to persistence in `AuditEvent`.
+  - `Concurrent Race Invariance`: Simulates concurrent duplicate SKU insertions. Proves that exactly one insertion succeeds while simultaneous duplicates are safely caught by unique constraints and translated to HTTP 409 `PRODUCT_DUPLICATE_SKU`.

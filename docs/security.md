@@ -269,3 +269,19 @@ Before production:
   - Sort fields are strictly validated using `validateSortField` against an allowlist (`['name', 'sku', 'createdAt', 'updatedAt', 'status', 'unitOfMeasure']`). Unrecognized fields safely fall back to `createdAt`.
 - **Sensitive Data Redaction in Audit Logging**:
   - All product mutation events sanitize metadata, preventing leaking of system secrets or authentication tokens into append-only `AuditEvent` logs.
+
+## Phase 3F Product Security Audit & Final QA Invariants
+
+- **Authoritative Tenant Membership Validation**:
+  - `OrganizationGuard` validates that the user possesses active membership within the specified `x-organization-id`. Header spoofing attempts by authenticated users against organizations they do not belong to are immediately denied with HTTP 403 `Forbidden`.
+- **SKU & Query Tenant Isolation**:
+  - SKU lookups (`/products/sku/:sku`) and catalog searches (`/products?search=...`) are strictly bounded by `organizationId`. A query cannot resolve, enumerate, or detect products belonging to another tenant under any search term or SKU parameter.
+- **Physical Composite Foreign Key Guardrails**:
+  - The PostgreSQL composite foreign key (`Product_organizationId_categoryId_fkey`) guarantees referential integrity at the database layer. Cross-tenant category associations are rejected both pre-emptively by domain validation and conclusively by the database engine (`P2003` / `INVALID_CATEGORY_REFERENCE`).
+- **Concurrent Mutation & SKU Race Invariance**:
+  - Uniqueness constraint `@@unique([organizationId, sku])` prevents race-condition collisions during concurrent product creation. Simultaneous insertion attempts resolve deterministically, with exactly one winning insert and losing inserts caught cleanly and mapped to HTTP 409 `PRODUCT_DUPLICATE_SKU`.
+- **Audit Sanitization Protocol**:
+  - All mutation audit metadata passes through `AuditService.sanitize()`. Sensitive keys including `password`, `token`, `secret`, `authorization`, `cookie`, and `database_url` are automatically redacted with `[REDACTED]` prior to persistence.
+- **Frontend Boundary Hardening**:
+  - Zero server/database packages (`@repo/database`, `prisma`, `pg`, `redis`) or credentials (`DATABASE_URL`, secrets) are accessible or imported in frontend bundles.
+  - Authentication tokens reside solely in HTTP-only, secure, same-site cookies and are never stored in browser `localStorage`.

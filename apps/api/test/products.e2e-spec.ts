@@ -7,6 +7,7 @@ import { StructuredLogger } from '../src/common/logger/structured-logger.service
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from '../src/common/interceptors/logging.interceptor';
+import { AuditService } from '../src/modules/audit/audit.service';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -735,6 +736,96 @@ describe('Product REST API (e2e)', () => {
         .set('Cookie', [`accessToken=${tokenA}`])
         .set('x-organization-id', orgAId)
         .expect(404);
+    });
+  });
+
+  describe('Phase 3F Security & Final QA Hardening Suite', () => {
+    it('37. [IDOR / Tenancy] should deny request when x-organization-id is spoofed to another tenant (403 Forbidden)', async () => {
+      // User A (member of Org A only) tries to act under Org B by spoofing header
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/products')
+        .set('Cookie', [`accessToken=${tokenA}`])
+        .set('x-organization-id', orgBId)
+        .expect(403);
+
+      expect(res.body.error?.code).toBe('FORBIDDEN');
+    });
+
+    it('38. [IDOR / SKU] should return 404 when looking up another organization SKU via SKU endpoint', async () => {
+      // createdProductBId in Org B has SKU 'BOLT-100' in Org B.
+      // Org A's BOLT-100 was deleted in test 35.
+      // Therefore, querying bolt-100 in Org A must return 404 and NOT resolve Org B's product.
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/products/sku/BOLT-100')
+        .set('Cookie', [`accessToken=${tokenA}`])
+        .set('x-organization-id', orgAId)
+        .expect(404);
+
+      expect(res.body.error?.code).toBe('PRODUCT_NOT_FOUND');
+    });
+
+    it('39. [Search Isolation] search queries must never leak products from other organizations', async () => {
+      // Query searching for Org B product name using Org A credentials
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/products?search=Org%20B%20Bolt')
+        .set('Cookie', [`accessToken=${tokenA}`])
+        .set('x-organization-id', orgAId)
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(0);
+      expect(res.body.meta.total).toBe(0);
+    });
+
+    it('40. [Audit Redaction] audit logging should sanitize any sensitive fields in metadata', async () => {
+      // Test the audit service's sanitation directly with sensitive tokens and headers
+      const auditService = app.get<AuditService>(AuditService);
+      const testMetadata = {
+        password: 'SuperSecretPassword!',
+        token: 'ey1234567890',
+        authorization: 'Bearer secret_token',
+        cookie: 'sessionId=abc123xyz',
+        database_url: 'postgresql://postgres:secret@localhost:5432/ims',
+        regularField: 'safeProductValue',
+      };
+
+      const sanitized = auditService.sanitize(testMetadata);
+      expect(sanitized.password).toBe('[REDACTED]');
+      expect(sanitized.token).toBe('[REDACTED]');
+      expect(sanitized.authorization).toBe('[REDACTED]');
+      expect(sanitized.cookie).toBe('[REDACTED]');
+      expect(sanitized.database_url).toBe('[REDACTED]');
+      expect(sanitized.regularField).toBe('safeProductValue');
+    });
+
+    it('41. [Concurrency / Race Condition] concurrent duplicate SKU creation attempts should resolve cleanly without corrupted state', async () => {
+      const concurrentSku = `RACE-SKU-${Date.now()}`;
+
+      // Fire 3 simultaneous create requests with identical SKU in Org A
+      const requests = [1, 2, 3].map(() =>
+        request(app.getHttpServer())
+          .post('/api/v1/products')
+          .set('Cookie', [`accessToken=${tokenA}`])
+          .set('x-organization-id', orgAId)
+          .send({
+            sku: concurrentSku,
+            name: `Concurrent Product ${concurrentSku}`,
+            categoryId: catA2Id,
+          }),
+      );
+
+      const responses = await Promise.all(requests);
+      const successCount = responses.filter((r) => r.status === 201).length;
+      const conflictCount = responses.filter((r) => r.status === 409).length;
+
+      // Exactly 1 must succeed, the others must fail with 409 Conflict
+      expect(successCount).toBe(1);
+      expect(conflictCount).toBe(2);
+
+      // Verify only 1 product exists in DB
+      const inDb = await prisma.product.findMany({
+        where: { organizationId: orgAId, sku: concurrentSku },
+      });
+      expect(inDb).toHaveLength(1);
     });
   });
 });
