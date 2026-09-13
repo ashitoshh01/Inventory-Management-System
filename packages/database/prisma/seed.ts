@@ -30,6 +30,17 @@ async function main(): Promise<void> {
       { action: 'warehouse.delete', description: 'Delete warehouses' },
       { action: 'stock.read', description: 'View stock balances and ledger history' },
       { action: 'stock.mutate', description: 'Mutate stock balances' },
+      { action: 'purchase-order.read', description: 'View purchase orders' },
+      { action: 'purchase-order.create', description: 'Create purchase orders' },
+      { action: 'purchase-order.update', description: 'Update purchase orders' },
+      { action: 'purchase-order.delete', description: 'Delete draft purchase orders' },
+      { action: 'purchase-order.submit', description: 'Submit purchase orders for approval' },
+      { action: 'purchase-order.approve', description: 'Approve submitted purchase orders' },
+      {
+        action: 'purchase-order.receive',
+        description: 'Receive inventory against approved purchase orders',
+      },
+      { action: 'purchase-order.cancel', description: 'Cancel purchase orders' },
     ];
 
     for (const perm of corePermissions) {

@@ -13,14 +13,17 @@ export class AuditService {
     entityId?: string;
     metadata?: Record<string, unknown>;
     requestId?: string;
+    tx?: PrismaService | Prisma.TransactionClient;
   }): Promise<unknown> {
-    const sanitizedMetadata = params.metadata
-      ? (this.sanitize(params.metadata) as Record<string, unknown>)
+    const { tx, ...rest } = params;
+    const client = tx ?? this.prisma;
+    const sanitizedMetadata = rest.metadata
+      ? (this.sanitize(rest.metadata) as Record<string, unknown>)
       : undefined;
 
-    return this.prisma.auditEvent.create({
+    return client.auditEvent.create({
       data: {
-        ...params,
+        ...rest,
         metadata: sanitizedMetadata as Prisma.InputJsonValue,
       },
     });
@@ -53,5 +56,57 @@ export class AuditService {
       }
     }
     return result as T;
+  }
+
+  async getEventsForEntity(
+    organizationId: string,
+    entityType: string,
+    entityId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      action: string;
+      actorUserId: string | null;
+      createdAt: string;
+      metadata?: Record<string, unknown>;
+    }>
+  > {
+    const events = await this.prisma.auditEvent.findMany({
+      where: {
+        organizationId,
+        entityType,
+        entityId,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        entityId: true,
+        action: true,
+        actorUserId: true,
+        createdAt: true,
+        metadata: true,
+      },
+    });
+
+    return events.map((e) => {
+      const item: {
+        id: string;
+        entityId: string | null;
+        action: string;
+        actorUserId: string | null;
+        createdAt: string;
+        metadata?: Record<string, unknown>;
+      } = {
+        id: e.id,
+        entityId: e.entityId,
+        action: e.action,
+        actorUserId: e.actorUserId,
+        createdAt: e.createdAt.toISOString(),
+      };
+      if (e.metadata) {
+        item.metadata = this.sanitize(e.metadata) as Record<string, unknown>;
+      }
+      return item;
+    });
   }
 }

@@ -17,6 +17,9 @@ model User {
   memberships               OrganizationMembership[]
   sessions                  Session[]
   createdStockLedgerEntries StockLedgerEntry[]
+  createdPurchaseOrders     PurchaseOrder[]          @relation("PurchaseOrderCreator")
+  approvedPurchaseOrders    PurchaseOrder[]          @relation("PurchaseOrderApprover")
+  receivedGoodsReceipts     GoodsReceipt[]           @relation("GoodsReceiptReceiver")
 }
 
 model Organization {
@@ -33,6 +36,10 @@ model Organization {
   warehouses         Warehouse[]
   stockBalances      StockBalance[]
   stockLedgerEntries StockLedgerEntry[]
+  purchaseOrders     PurchaseOrder[]
+  purchaseOrderLines PurchaseOrderLine[]
+  goodsReceipts      GoodsReceipt[]
+  goodsReceiptLines  GoodsReceiptLine[]
 }
 
 model Role {
@@ -153,6 +160,8 @@ model Product {
   category           Category           @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
   stockBalances      StockBalance[]
   stockLedgerEntries StockLedgerEntry[]
+  purchaseOrderLines PurchaseOrderLine[]
+  goodsReceiptLines  GoodsReceiptLine[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, sku])
@@ -186,6 +195,8 @@ model Warehouse {
   organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   stockBalances      StockBalance[]
   stockLedgerEntries StockLedgerEntry[]
+  purchaseOrders     PurchaseOrder[]
+  goodsReceipts      GoodsReceipt[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, name])
@@ -249,3 +260,132 @@ model StockLedgerEntry {
   @@index([organizationId, createdAt])
   @@index([organizationId, productId, warehouseId, createdAt])
 }
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CLOSED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id                  String              @id @default(uuid())
+  organizationId      String
+  purchaseOrderNumber String
+  idempotencyKey      String?
+  idempotencyPayloadHash String?
+  supplierName        String
+  supplierEmail       String?
+  status              PurchaseOrderStatus @default(DRAFT)
+  orderDate           DateTime            @default(now())
+  expectedDate        DateTime?
+  warehouseId         String
+  currency            String              @default("INR")
+  subtotal            Decimal             @db.Decimal(14, 4)
+  taxTotal            Decimal             @default(0) @db.Decimal(14, 4)
+  grandTotal          Decimal             @db.Decimal(14, 4)
+  notes               String?
+  createdById         String?
+  approvedById        String?
+  approvedAt          DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse           @relation(fields: [organizationId, warehouseId], references: [organizationId, id], onDelete: Restrict)
+  creator      User?               @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approver     User?               @relation("PurchaseOrderApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines        PurchaseOrderLine[]
+  goodsReceipts GoodsReceipt[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, purchaseOrderNumber])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId])
+  @@index([organizationId, idempotencyKey])
+  @@index([organizationId, status])
+  @@index([organizationId, warehouseId])
+  @@index([organizationId, orderDate])
+  @@index([organizationId, expectedDate])
+  @@index([organizationId, createdAt])
+}
+
+model PurchaseOrderLine {
+  id               String        @id @default(uuid())
+  organizationId   String
+  purchaseOrderId  String
+  productId        String
+  quantity         Decimal       @db.Decimal(14, 4)
+  unitPrice        Decimal       @db.Decimal(14, 4)
+  lineTotal        Decimal       @db.Decimal(14, 4)
+  receivedQuantity Decimal       @default(0) @db.Decimal(14, 4)
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder     PurchaseOrder      @relation(fields: [organizationId, purchaseOrderId], references: [organizationId, id], onDelete: Cascade)
+  product           Product            @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+  goodsReceiptLines GoodsReceiptLine[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([organizationId, purchaseOrderId])
+  @@index([organizationId, productId])
+  @@index([organizationId, createdAt])
+}
+
+model GoodsReceipt {
+  id                     String             @id @default(uuid())
+  organizationId         String
+  purchaseOrderId        String
+  warehouseId            String
+  receiptNumber          String
+  idempotencyKey         String?
+  idempotencyPayloadHash String?
+  notes                  String?
+  receivedById           String?
+  receivedAt             DateTime           @default(now())
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  organization  Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder      @relation(fields: [organizationId, purchaseOrderId], references: [organizationId, id], onDelete: Cascade)
+  warehouse     Warehouse          @relation(fields: [organizationId, warehouseId], references: [organizationId, id], onDelete: Restrict)
+  receiver      User?              @relation("GoodsReceiptReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  lines         GoodsReceiptLine[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, receiptNumber])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId])
+  @@index([organizationId, purchaseOrderId])
+  @@index([organizationId, warehouseId])
+  @@index([organizationId, receivedAt])
+  @@index([organizationId, idempotencyKey])
+}
+
+model GoodsReceiptLine {
+  id                  String        @id @default(uuid())
+  organizationId      String
+  goodsReceiptId      String
+  purchaseOrderLineId String
+  productId           String
+  quantityReceived    Decimal       @db.Decimal(14, 4)
+  createdAt           DateTime      @default(now())
+
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  goodsReceipt      GoodsReceipt      @relation(fields: [organizationId, goodsReceiptId], references: [organizationId, id], onDelete: Cascade)
+  purchaseOrderLine PurchaseOrderLine @relation(fields: [organizationId, purchaseOrderLineId], references: [organizationId, id], onDelete: Restrict)
+  product           Product           @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([organizationId, goodsReceiptId])
+  @@index([organizationId, purchaseOrderLineId])
+  @@index([organizationId, productId])
+}
+

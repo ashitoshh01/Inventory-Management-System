@@ -366,3 +366,23 @@ Phase 5F validates the end-to-end security, integrity, and concurrency guarantee
 - **Zero Frontend Leakage**:
   - Verified zero imports of `@repo/database`, `@prisma/client`, `prisma`, `pg`, `postgres`, `redis`, or `ioredis` in `apps/web`.
   - Verified zero occurrences of `dangerouslySetInnerHTML` in web stock components.
+
+## Phase 6B Purchase Orders REST API Security Hardening
+
+- **Fine-Grained Procurement RBAC**:
+  - Endpoints enforce granular action permissions (`purchase-order.read`, `purchase-order.create`, `purchase-order.update`, `purchase-order.delete`, `purchase-order.submit`, `purchase-order.approve`, `purchase-order.cancel`).
+  - Separation of Duties: Creation permission (`purchase-order.create`) does not grant approval authority (`purchase-order.approve`). Callers without appropriate privileges are rejected with HTTP 403 `Forbidden`.
+- **Anti-Enumeration IDOR Defense**:
+  - Cross-tenant lookups (`GET /:id`), updates (`PATCH /:id`), deletions (`DELETE /:id`), and lifecycle operations (`POST /:id/submit`, `approve`, `cancel`) return HTTP 404 `Not Found` (`PURCHASE_ORDER_NOT_FOUND`). The system never reveals whether an ID exists in another organization.
+  - Cross-tenant warehouse or product references during creation or update return HTTP 404 `Not Found`, preventing cross-tenant existence probing.
+- **Server Authoritative Arithmetic & Mass Assignment Protection**:
+  - Line totals (`lineTotal`), subtotal (`subtotal`), tax (`taxTotal`), and grand total (`grandTotal`) are authoritatively computed server-side using arbitrary precision `Prisma.Decimal`.
+  - Global `ValidationPipe` with `forbidNonWhitelisted: true` rejects attempts to inject `organizationId`, `subtotal`, `grandTotal`, `status`, or foreign fields with HTTP 400 `Bad Request`.
+- **Strict DRAFT Immutability & Modification Guards**:
+  - Updates (`PATCH /:id`) and deletions (`DELETE /:id`) are strictly prohibited once a purchase order exits `DRAFT` status (e.g. `SUBMITTED`, `APPROVED`), returning HTTP 409 `Conflict`.
+  - `purchaseOrderNumber` is immutable once created.
+- **Header & Body Idempotency Reconciliation**:
+  - Supports `Idempotency-Key` HTTP header and `idempotencyKey` body property. Discrepancies between header and body result in HTTP 400 `Bad Request`.
+  - Replays with identical parameters yield HTTP 200 with the cached response; reuse with altered parameters yields HTTP 409 `Conflict`.
+- **Zero Stock Mutation Boundary**:
+  - Purchase order endpoints strictly decouple procurement documents from inventory state. No `StockBalance` updates or `StockLedgerEntry` writes can be triggered through the purchase order API in this phase.

@@ -11,6 +11,14 @@ export interface PermissionsState {
   canDeleteWarehouse: boolean;
   canReadStock: boolean;
   canMutateStock: boolean;
+  canReadPurchaseOrders: boolean;
+  canCreatePurchaseOrder: boolean;
+  canUpdatePurchaseOrder: boolean;
+  canDeletePurchaseOrder: boolean;
+  canSubmitPurchaseOrder: boolean;
+  canApprovePurchaseOrder: boolean;
+  canCancelPurchaseOrder: boolean;
+  canReceivePurchaseOrder: boolean;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -27,6 +35,14 @@ export function usePermissions(): PermissionsState {
       canDeleteWarehouse: true,
       canReadStock: true,
       canMutateStock: true,
+      canReadPurchaseOrders: true,
+      canCreatePurchaseOrder: true,
+      canUpdatePurchaseOrder: true,
+      canDeletePurchaseOrder: true,
+      canSubmitPurchaseOrder: true,
+      canApprovePurchaseOrder: true,
+      canCancelPurchaseOrder: true,
+      canReceivePurchaseOrder: true,
       hasPermission: () => true,
     };
   }
@@ -43,6 +59,14 @@ export function usePermissions(): PermissionsState {
     'warehouse.delete',
     'stock.read',
     'stock.mutate',
+    'purchase-order.read',
+    'purchase-order.create',
+    'purchase-order.update',
+    'purchase-order.delete',
+    'purchase-order.submit',
+    'purchase-order.approve',
+    'purchase-order.cancel',
+    'purchase-order.receive',
   ];
   if (stored) {
     try {
@@ -65,6 +89,14 @@ export function usePermissions(): PermissionsState {
     canDeleteWarehouse: hasPermission('warehouse.delete'),
     canReadStock: hasPermission('stock.read'),
     canMutateStock: hasPermission('stock.mutate'),
+    canReadPurchaseOrders: hasPermission('purchase-order.read'),
+    canCreatePurchaseOrder: hasPermission('purchase-order.create'),
+    canUpdatePurchaseOrder: hasPermission('purchase-order.update'),
+    canDeletePurchaseOrder: hasPermission('purchase-order.delete'),
+    canSubmitPurchaseOrder: hasPermission('purchase-order.submit'),
+    canApprovePurchaseOrder: hasPermission('purchase-order.approve'),
+    canCancelPurchaseOrder: hasPermission('purchase-order.cancel'),
+    canReceivePurchaseOrder: hasPermission('purchase-order.receive'),
     hasPermission,
   };
 }

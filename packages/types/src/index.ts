@@ -13,3 +13,4 @@ export * from './category.js';
 export * from './product.js';
 export * from './warehouse.js';
 export * from './stock.js';
+export * from './purchase-order.js';

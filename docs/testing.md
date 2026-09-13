@@ -528,3 +528,93 @@ Phase 5F establishes rigorous adversarial security and concurrency test suites a
   pnpm test
   pnpm build
   ```
+
+## Phase 6A Purchase Order / Procurement Foundation Test Suite
+
+Phase 6A introduces domain and PostgreSQL integration test suites validating the Purchase Order aggregate:
+
+- **State Machine Suite (`apps/api/src/modules/purchase-orders/purchase-orders.state-machine.spec.ts`)**:
+  - Validates all permitted lifecycle state transitions (`DRAFT → SUBMITTED → APPROVED → PARTIALLY_RECEIVED → RECEIVED → CLOSED`, and explicit cancellation paths).
+  - Validates self-transitions as idempotent no-ops.
+  - Verifies rejection of illegal transitions (e.g., `RECEIVED → DRAFT`, `DRAFT → RECEIVED`, `CLOSED → DRAFT`).
+  - Verifies `CLOSED` and `CANCELLED` are terminal states.
+
+- **Purchase Order Validator Suite (`apps/api/src/modules/purchase-orders/purchase-orders.validator.spec.ts`)**:
+  - Validates PO number formatting, normalization, max length, and allowed character sets.
+  - Validates supplier name and email validation.
+  - Validates order dates (`expectedDate >= orderDate`).
+  - Validates exact 4-decimal scale for quantities and unit prices, rejecting non-numeric values, >4 decimal places, zero quantity, and negative prices.
+  - Validates exact line total (`quantity * unitPrice`), subtotal (`sum(lineTotal)`), and grand total calculations.
+
+- **Purchase Orders Foundation Service Suite (`apps/api/src/modules/purchase-orders/purchase-orders-foundation.service.spec.ts`)**:
+  - Unit tests service methods with mocked Prisma and Audit services.
+  - Asserts error handling on missing tenant warehouses and products.
+  - Asserts audit event emission on creation, status changes, and draft deletion.
+
+- **Purchase Orders Integration Suite (`apps/api/test/purchase-orders.integration.spec.ts`)**:
+  - Real PostgreSQL integration suite validating:
+    1. **Tenant Isolation**: Cross-tenant warehouse and product references rejected at database composite FK level.
+    2. **Uniqueness**: Identical PO numbers allowed across different organizations; duplicate PO numbers in same organization rejected.
+    3. **Concurrency Race**: Simultaneous creation of identical PO numbers in same tenant results in exactly 1 success and 1 controlled conflict.
+    4. **Transaction Boundary**: All PO lines commit atomically; failures trigger full transaction rollback with zero rows left.
+    5. **Exact Fixed-Point Arithmetic & DB Constraints**: Enforces PostgreSQL check constraints for non-negative prices, positive quantities, and exact total consistency.
+    6. **State Machine Lifecycle**: Transitions status with full audit logging.
+    7. **Deletion Invariants**: Restricts deletion to DRAFT status; prevents deleting warehouses/products referenced by purchase orders (`onDelete: Restrict`).
+    8. **Stock Boundary Invariant**: Proves zero mutations to `StockBalance` and zero `StockLedgerEntry` writes across all PO operations.
+
+## Phase 6B Purchase Orders REST API Test Suite
+
+Phase 6B introduces comprehensive unit and PostgreSQL end-to-end HTTP test suites for the Purchase Order REST API layer:
+
+- **Idempotency Service Suite (`apps/api/src/modules/core/services/idempotency.service.spec.ts`)**:
+  - Direct execution when key is omitted.
+  - Idempotent replay caching and return when key matches previous payload.
+  - Conflict detection (`409 Conflict`) on key reuse with modified payload.
+  - Strict tenant key partitioning (`organizationId:idempotencyKey`).
+
+- **Purchase Order DTO Suite (`apps/api/src/modules/purchase-orders/dto/purchase-order.dto.spec.ts`)**:
+  - Validates `CreatePurchaseOrderDto`, `CreatePurchaseOrderLineDto`, `UpdatePurchaseOrderDto`, and `QueryPurchaseOrderDto`.
+  - Verifies exact 4-decimal quantity string format (`IsExactDecimalQuantity`), rejecting scale > 4, zero, and negative values.
+  - Verifies exact 4-decimal unit price string format (`IsExactDecimalMoney`), rejecting scale > 4 and negative values.
+  - Verifies sorting allowlists (`ALLOWED_PURCHASE_ORDER_SORT_FIELDS`) and default fallback to `createdAt`.
+
+- **Purchase Orders Service Suite (`apps/api/src/modules/purchase-orders/purchase-orders.service.spec.ts`)**:
+  - Validates service orchestration with mocked Prisma, Foundation, Audit, and Idempotency services.
+  - Verifies tenant-isolated queries, pagination envelopes, and filters.
+  - Verifies DRAFT immutability guard (`PurchaseOrderCannotUpdateException` on non-DRAFT updates).
+  - Verifies atomic line recalculation and replacement in interactive transactions.
+  - Verifies lifecycle state machine delegation (`submit`, `approve`, `cancel`).
+
+- **Purchase Orders Controller Suite (`apps/api/src/modules/purchase-orders/purchase-orders.controller.spec.ts`)**:
+  - Validates HTTP status code mapping (`201 Created` for new POs, `200 OK` for idempotent replays).
+  - Validates idempotency header and body reconciliation (rejecting discrepancies with `400 Bad Request`).
+  - Validates key regex validation and max length enforcement.
+  - Validates controller delegation for all REST endpoints (`GET /`, `GET /:id`, `PATCH /:id`, `DELETE /:id`, `POST /:id/submit`, `approve`, `cancel`).
+
+- **Purchase Orders Real PostgreSQL E2E Suite (`apps/api/test/purchase-orders.e2e-spec.ts`)**:
+  - 34 comprehensive end-to-end tests against real PostgreSQL:
+    1. **Authentication & RBAC**: `401 Unauthorized` without credentials; `403 Forbidden` when lacking `purchase-order.create` or `purchase-order.approve`.
+    2. **Tenant Isolation & IDOR**: Cross-tenant `GET /:id`, `PATCH /:id`, `DELETE /:id`, and lifecycle endpoints return uniform `404 Not Found` (anti-enumeration). Cross-tenant warehouse and product references return `404 Not Found`.
+    3. **Precision & Authoritative Totals**: Exact 4-decimal arithmetic (`quantity * unitPrice`); client-supplied fabricated totals rejected with `400 Bad Request` via `forbidNonWhitelisted`. Negative prices and scale > 4 rejected. Duplicate products in lines rejected.
+    4. **Concurrency & Uniqueness**: Simultaneous duplicate PO creations in same tenant result in 1 `201 Created` and 1 `409 Conflict`. Identical PO numbers allowed across distinct tenants.
+    5. **Idempotency Replay**: Dual header/body reconciliation; `201 Created` on first execution, `200 OK` on identical replay, `409 Conflict` on payload mismatch.
+    6. **Lifecycle State Machine**: Valid transitions `DRAFT → SUBMITTED → APPROVED` with audit records, `approvedById` and `approvedAt`. Invalid transitions rejected with `400 Bad Request`. Cancellation to `CANCELLED` and terminal state enforcement.
+    7. **PATCH & DELETE Rules**: Updating/deleting DRAFT succeeds with line recalculations. Updating/deleting non-DRAFT returns `409 Conflict`.
+    8. **Query & Pagination**: Filtering by status and warehouseId with pagination metadata envelope; substring search by PO number.
+    9. **CRITICAL STOCK SAFETY**: Asserts exact `StockBalance` count and `StockLedgerEntry` count parity (0 mutations, 0 ledger entries) after full PO lifecycle.
+
+- **Test Execution**:
+  ```bash
+  # Run Purchase Orders unit tests
+  pnpm --filter @repo/api test src/modules/purchase-orders/
+
+  # Run Purchase Orders E2E tests against PostgreSQL
+  pnpm --filter @repo/api test test/purchase-orders.e2e-spec.ts
+
+  # Run full monorepo quality gates
+  pnpm format:check
+  pnpm lint
+  pnpm typecheck
+  pnpm test
+  pnpm build
+  ```

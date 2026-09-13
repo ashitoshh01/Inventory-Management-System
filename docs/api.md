@@ -425,3 +425,177 @@ For inbound webhooks:
       - `409 Conflict` (`STOCK_IDEMPOTENCY_CONFLICT`) if key was used with different payload.
       - `409 Conflict` (`STOCK_INSUFFICIENT_QUANTITY`) if mutation would result in negative stock.
       - `409 Conflict` (`STOCK_OPENING_INVALID_STATE`) if OPENING is applied to non-zero balance or prior history.
+
+## Phase 6B Updates — Purchase Orders REST API
+
+- **Base Route**: `/api/v1/purchase-orders`
+- **Security & Guards**:
+  - `JwtAuthGuard`: Enforces active authenticated session (`401 Unauthorized`).
+  - `OrganizationGuard`: Enforces active tenant membership via `x-organization-id` (`403 Forbidden`).
+  - `PermissionsGuard`: Enforces fine-grained procurement permissions:
+    - `purchase-order.read`: View purchase order details and lists.
+    - `purchase-order.create`: Create new purchase orders.
+    - `purchase-order.update`: Update draft purchase orders.
+    - `purchase-order.delete`: Delete draft purchase orders.
+    - `purchase-order.submit`: Submit draft purchase orders for approval.
+    - `purchase-order.approve`: Approve submitted purchase orders.
+    - `purchase-order.cancel`: Cancel active purchase orders.
+- **Precision & Monetary Arithmetic Rules**:
+  - `quantity`: Exact positive decimal string with up to 4 decimal places (strictly > 0).
+  - `unitPrice`: Exact non-negative decimal string with up to 4 decimal places (>= 0).
+  - Server Authoritative Totals: `lineTotal`, `subtotal`, and `grandTotal` are computed server-side via exact `Prisma.Decimal` arithmetic (`quantity * unitPrice`). Client-supplied totals are rejected with `400 Bad Request`.
+- **CRITICAL Stock Boundary Invariant**:
+  - Purchase order endpoints strictly NEVER modify `StockBalance` or write to `StockLedgerEntry`. Procurement and inventory balances are decoupled in this phase.
+- **Endpoints**:
+  - `POST /api/v1/purchase-orders` — Create Purchase Order (`purchase-order.create`)
+    - Headers:
+      - `Idempotency-Key`: optional string (alphanumeric, underscores, hyphens, max 100 chars)
+      - `x-organization-id`: required active tenant ID
+    - Body:
+      ```json
+      {
+        "purchaseOrderNumber": "PO-2026-001",
+        "supplierName": "Acme Industrial",
+        "supplierEmail": "vendor@acme.com",
+        "warehouseId": "uuid",
+        "orderDate": "2026-09-12T00:00:00.000Z",
+        "expectedDate": "2026-09-20T00:00:00.000Z",
+        "currency": "INR",
+        "notes": "Optional notes",
+        "idempotencyKey": "optional key matching header",
+        "lines": [
+          {
+            "productId": "uuid",
+            "quantity": "10.0000",
+            "unitPrice": "25.5000",
+            "notes": "Line item note"
+          }
+        ]
+      }
+      ```
+    - Status:
+      - `201 Created` on new purchase order.
+      - `200 OK` on idempotent replay.
+      - `400 Bad Request` on invalid input or idempotency header/body key mismatch.
+      - `404 Not Found` if warehouse or product does not belong to active organization.
+      - `409 Conflict` on duplicate PO number in tenant or idempotency payload mismatch.
+  - `GET /api/v1/purchase-orders` — List Purchase Orders (`purchase-order.read`)
+    - Query parameters:
+      - `page`: integer (default: 1)
+      - `limit`: integer (default: 20, max: 100)
+      - `status`: `DRAFT` | `SUBMITTED` | `APPROVED` | `PARTIALLY_RECEIVED` | `RECEIVED` | `CLOSED` | `CANCELLED`
+      - `warehouseId`: UUIDv4
+      - `supplierName`: string substring filter
+      - `purchaseOrderNumber`: string substring filter
+      - `search`: string search across PO number, supplier name, and notes
+      - `sortBy`: `createdAt` | `updatedAt` | `orderDate` | `expectedDate` | `purchaseOrderNumber` | `status` | `grandTotal` (default: `createdAt`)
+      - `sortOrder`: `asc` | `desc` (default: `desc`)
+    - Status: `200 OK` with paginated metadata envelope.
+  - `GET /api/v1/purchase-orders/:id` — Get Purchase Order Detail (`purchase-order.read`)
+    - Parameter `:id`: UUIDv4
+    - Returns purchase order with nested lines sorted by `createdAt: asc`.
+    - Status: `200 OK` or `404 Not Found` (anti-enumeration).
+  - `PATCH /api/v1/purchase-orders/:id` — Update Draft Purchase Order (`purchase-order.update`)
+    - Parameter `:id`: UUIDv4
+    - Body: partial fields (`supplierName`, `supplierEmail`, `warehouseId`, `orderDate`, `expectedDate`, `currency`, `notes`, `lines`).
+    - Allowed only when status is `DRAFT`. Attempting to update non-DRAFT PO returns `409 Conflict`.
+    - Status: `200 OK`.
+  - `DELETE /api/v1/purchase-orders/:id` — Delete Draft Purchase Order (`purchase-order.delete`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `DRAFT`. Attempting to delete non-DRAFT PO returns `409 Conflict`.
+    - Status: `200 OK`.
+  - `POST /api/v1/purchase-orders/:id/submit` — Submit Purchase Order (`purchase-order.submit`)
+    - Transitions PO from `DRAFT` to `SUBMITTED`.
+    - Status: `201 Created` or `400 Bad Request` if invalid transition.
+  - `POST /api/v1/purchase-orders/:id/approve` — Approve Purchase Order (`purchase-order.approve`)
+    - Transitions PO from `SUBMITTED` to `APPROVED`. Sets `approvedById` and `approvedAt`.
+    - Status: `201 Created` or `400 Bad Request` if invalid transition.
+  - `POST /api/v1/purchase-orders/:id/cancel` — Cancel Purchase Order (`purchase-order.cancel`)
+    - Transitions PO to `CANCELLED` from any valid pre-terminal state.
+    - Status: `201 Created` or `400 Bad Request` if terminal.
+
+## Phase 6D Updates — Purchase Order Receiving & Inventory Integration
+
+- **Authorization & RBAC**:
+  - `POST /api/v1/purchase-orders/:id/receive` requires `purchase-order.receive` permission.
+  - `GET /api/v1/purchase-orders/:id/receipts` requires `purchase-order.read` permission.
+- **Endpoints**:
+  - `POST /api/v1/purchase-orders/:id/receive` — Receive Inventory Against Approved Purchase Order (`purchase-order.receive`)
+    - Parameter `:id`: UUIDv4
+    - Headers:
+      - `Idempotency-Key` (optional, string): Database-enforced idempotency key.
+    - Body (`ReceivePurchaseOrderDto`):
+      - `lines`: array of objects (`ReceivePurchaseOrderItemDto`):
+        - `purchaseOrderLineId`: UUIDv4 (must belong to this purchase order)
+        - `quantity`: exact decimal string matching `/^\d+(\.\d{1,4})?$/`, strictly > 0
+      - `notes`: optional string, maximum 500 characters
+    - Business Rules:
+      - PO must be in `APPROVED` or `PARTIALLY_RECEIVED` status. Otherwise returns `400 Bad Request` (`PURCHASE_ORDER_NOT_APPROVED_FOR_RECEIPT`).
+      - Over-receiving is strictly prohibited: `currentReceived + quantity <= quantityOrdered` on every line. Otherwise returns `400 Bad Request` (`PURCHASE_ORDER_OVER_RECEIPT_NOT_ALLOWED`).
+      - Atomically updates:
+        1. Row lock `FOR UPDATE` on `PurchaseOrder` and child `PurchaseOrderLine` rows.
+        2. Increments `PurchaseOrderLine.receivedQuantity`.
+        3. Generates sequential receipt number `GR-<PO_NUMBER>-<SEQUENCE>` and persists `GoodsReceipt` + `GoodsReceiptLine`.
+        4. Mutates inventory via authoritative `StockMutationService.mutateStockTx` with `type: 'RECEIPT'`, referenceType `'PURCHASE_ORDER'`, updating `StockBalance` and appending `StockLedgerEntry`.
+        5. Updates PO status: `PARTIALLY_RECEIVED` if some lines partially received, `RECEIVED` if all lines fully received (`receivedQuantity >= quantity`).
+        6. Logs transactional `AuditEvent` with action `'purchase-order.received'`.
+    - Status:
+      - `201 Created` with `{ order: PurchaseOrderDto, receipt: GoodsReceiptDto, isIdempotentReplay: boolean }`.
+      - `400 Bad Request` if order not eligible, over-receipt attempted, or line invalid.
+      - `404 Not Found` if order does not exist in organization.
+      - `409 Conflict` (`PURCHASE_ORDER_RECEIPT_IDEMPOTENCY_MISMATCH`) if idempotency key reused with mismatched payload.
+  - `GET /api/v1/purchase-orders/:id/receipts` — Get Goods Receipt History (`purchase-order.read`)
+    - Parameter `:id`: UUIDv4
+    - Returns array of `GoodsReceiptDto` ordered by `receivedAt: desc` with child `GoodsReceiptLineDto` rows.
+    - Status: `200 OK` or `404 Not Found`.
+
+## Phase 6E Updates — Procurement Operations, Reconciliation & Production QA
+
+- **Authorization & RBAC**:
+  - `GET /api/v1/purchase-orders/metrics` requires `purchase-order.read` permission.
+  - `GET /api/v1/purchase-orders/:id/reconciliation` requires `purchase-order.read` permission.
+  - `GET /api/v1/purchase-orders/:id/audit-trail` requires `purchase-order.read` permission.
+- **Operational Query Parameters (`GET /api/v1/purchase-orders`)**:
+  - `isOverdue` (boolean, optional): Filters orders that are past their expected delivery date and still outstanding (`status IN ['APPROVED', 'PARTIALLY_RECEIVED']`). When `false`, excludes overdue orders.
+  - `receivingState` (string enum, optional): `'OUTSTANDING'` (filters for `APPROVED` or `PARTIALLY_RECEIVED`) or `'RECEIVED'` (filters for `RECEIVED`).
+  - `startDate` (ISO 8601 string, optional): Lower bound filter on `orderDate`.
+  - `endDate` (ISO 8601 string, optional): Upper bound filter on `orderDate`.
+  - `supplierName` (string, optional): Case-insensitive partial text match on supplier name.
+- **Endpoints**:
+  - `GET /api/v1/purchase-orders/metrics` — Aggregate Procurement KPI Metrics (`purchase-order.read`)
+    - Returns tenant-scoped counts and quantities:
+      - `totalOrders`: Total purchase orders count in organization.
+      - `statusCounts`: Object with count of orders per status (`DRAFT`, `SUBMITTED`, `APPROVED`, `PARTIALLY_RECEIVED`, `RECEIVED`, `CANCELLED`).
+      - `totalOrderedQuantity`: Sum of ordered quantities across all PO lines formatted as exact 4-decimal string.
+      - `totalReceivedQuantity`: Sum of received quantities across all PO lines formatted as exact 4-decimal string.
+      - `totalOutstandingQuantity`: Exact difference `totalOrdered - totalReceived`.
+      - `pendingReceivingCount`: Count of orders in `APPROVED` or `PARTIALLY_RECEIVED` status.
+      - `overdueCount`: Count of pending orders where `expectedDate < now`.
+      - `recentlyReceivedCount`: Count of orders with receipts in the last 7 days.
+    - Strictly read-only; no database or inventory mutations.
+    - Status: `200 OK`.
+  - `GET /api/v1/purchase-orders/:id/reconciliation` — Live Inventory Reconciliation Cross-Check (`purchase-order.read`)
+    - Parameter `:id`: UUIDv4
+    - Mathematical multi-way cross-verification:
+      - PO Lines `receivedQuantity`
+      - Child `GoodsReceiptLine` sum
+      - Ledger `StockLedgerEntry` sum with `referenceType: 'PURCHASE_ORDER'` and `type: 'RECEIPT'`
+      - Physical `StockBalance` verification
+    - Returns `PurchaseOrderReconciliationDto`:
+      - `purchaseOrderId`: UUIDv4
+      - `purchaseOrderNumber`: string
+      - `status`: `PurchaseOrderStatus`
+      - `isReconciled`: boolean (`true` if and only if zero discrepancies detected across all lines)
+      - `totalOrderedQuantity`: exact decimal string
+      - `totalReceivedQuantity`: exact decimal string
+      - `totalRemainingQuantity`: exact decimal string
+      - `totalGoodsReceiptQuantity`: exact decimal string
+      - `totalReceiptLedgerDelta`: exact decimal string
+      - `lines`: array of `PurchaseOrderReconciliationLineDto`
+      - `discrepancies`: array of human-readable discrepancy descriptions (empty when reconciled)
+    - Strictly read-only; performs zero mutations.
+    - Status: `200 OK` or `404 Not Found`.
+  - `GET /api/v1/purchase-orders/:id/audit-trail` — Chronological Purchase Order Audit History (`purchase-order.read`)
+    - Parameter `:id`: UUIDv4
+    - Returns array of `PurchaseOrderAuditEventDto` chronologically sorted (newest first).
+    - Status: `200 OK` or `404 Not Found`.

@@ -356,3 +356,121 @@ A backup that has never been restored is not a verified backup.
 - **Idempotency Enforcement**:
   - `@@unique([organizationId, idempotencyKey])` enforces tenant-scoped deduplication in the database.
   - Concurrent requests with duplicate keys are handled safely: winning transaction commits; racing duplicate transactions detect existing entry and replay identical response or throw conflict exception.
+
+## Phase 6A Purchase Order / Procurement Database Foundation
+
+- **Models**:
+  - **`PurchaseOrderStatus` Enum**: `DRAFT`, `SUBMITTED`, `APPROVED`, `PARTIALLY_RECEIVED`, `RECEIVED`, `CLOSED`, `CANCELLED`.
+  - **`PurchaseOrder` Model**:
+    - `id`: String (UUIDv4 primary key)
+    - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+    - `purchaseOrderNumber`: String (Normalized uppercase/alphanumeric identifier)
+    - `supplierName`: String (Minimal vendor contact name)
+    - `supplierEmail`: String? (Optional vendor contact email)
+    - `status`: `PurchaseOrderStatus` enum (Default `DRAFT`)
+    - `orderDate`: DateTime (Default `now()`)
+    - `expectedDate`: DateTime? (Optional expected delivery date)
+    - `warehouseId`: String (FK referencing `Warehouse[organizationId, id]`)
+    - `currency`: String (Default `"INR"`)
+    - `subtotal`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `taxTotal`: Decimal (PostgreSQL `DECIMAL(14, 4)`, default `0.0000`)
+    - `grandTotal`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `notes`: String? (Optional notes)
+    - `createdById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+    - `approvedById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+    - `approvedAt`: DateTime? (Timestamp of approval)
+    - `createdAt`, `updatedAt`: Timestamps
+    - Constraints:
+      - `@@unique([organizationId, id])`: Enables composite foreign key targeting from `PurchaseOrderLine`.
+      - `@@unique([organizationId, purchaseOrderNumber])`: Enforces PO number uniqueness strictly within an organization.
+      - Composite FK to `Warehouse`: `[organizationId, warehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`).
+      - PostgreSQL Check Constraints:
+        - `PurchaseOrder_subtotal_non_negative`: `CHECK ("subtotal" >= 0)`
+        - `PurchaseOrder_taxTotal_non_negative`: `CHECK ("taxTotal" >= 0)`
+        - `PurchaseOrder_grandTotal_non_negative`: `CHECK ("grandTotal" >= 0)`
+        - `PurchaseOrder_grandTotal_math`: `CHECK ("grandTotal" = "subtotal" + "taxTotal")`
+    - Indexes:
+      - `@@index([organizationId])`
+      - `@@index([organizationId, status])`
+      - `@@index([organizationId, warehouseId])`
+      - `@@index([organizationId, orderDate])`
+      - `@@index([organizationId, createdAt])`
+  - **`PurchaseOrderLine` Model**:
+    - `id`: String (UUIDv4 primary key)
+    - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+    - `purchaseOrderId`: String (FK referencing `PurchaseOrder[organizationId, id]`, `onDelete: Cascade`)
+    - `productId`: String (FK referencing `Product[organizationId, id]`, `onDelete: Restrict`)
+    - `quantity`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `unitPrice`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `lineTotal`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+    - `receivedQuantity`: Decimal (PostgreSQL `DECIMAL(14, 4)`, default `0.0000`)
+    - `notes`: String? (Optional line item notes)
+    - `createdAt`, `updatedAt`: Timestamps
+    - Constraints:
+      - `@@unique([organizationId, id])`
+      - Composite FK to `PurchaseOrder`: `[organizationId, purchaseOrderId] -> PurchaseOrder[organizationId, id]` (`onDelete: Cascade`)
+      - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`)
+      - PostgreSQL Check Constraints:
+        - `PurchaseOrderLine_quantity_positive`: `CHECK ("quantity" > 0)`
+        - `PurchaseOrderLine_unitPrice_non_negative`: `CHECK ("unitPrice" >= 0)`
+        - `PurchaseOrderLine_lineTotal_non_negative`: `CHECK ("lineTotal" >= 0)`
+        - `PurchaseOrderLine_receivedQuantity_non_negative`: `CHECK ("receivedQuantity" >= 0)`
+        - `PurchaseOrderLine_receivedQuantity_le_quantity`: `CHECK ("receivedQuantity" <= "quantity")`
+    - Indexes:
+      - `@@index([organizationId])`
+      - `@@index([organizationId, purchaseOrderId])`
+      - `@@index([organizationId, productId])`
+      - `@@index([organizationId, createdAt])`
+- **Referential Integrity & Deletion Policy**:
+  - Deletion is restricted to `DRAFT` purchase orders at the application level.
+  - Deleting a warehouse or product referenced by an active purchase order or order line is prohibited by PostgreSQL database foreign key constraints (`onDelete: Restrict`).
+- **Stock Boundary Invariant**:
+  - Purchase Orders represent intent to purchase and strictly do NOT modify `StockBalance` or create `StockLedgerEntry` rows. Inventory mutations occur only upon subsequent goods receipt workflows.
+- **Migration**:
+  - Applied migration: `20260912183932_phase6a_purchase_order_foundation`.
+
+## Goods Receipt Models (Phase 6D)
+
+Implemented in `packages/database/prisma/schema.prisma` with migration `20260913140000_phase6d_goods_receipt`.
+
+### GoodsReceipt (Physical Receipt Header)
+
+- **Purpose**: Authoritative audit record of goods received at a warehouse dock against an approved purchase order.
+- **Fields**:
+  - `id`: UUID primary key
+  - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+  - `purchaseOrderId`: String (FK referencing `PurchaseOrder[organizationId, id]`, `onDelete: Restrict`)
+  - `warehouseId`: String (FK referencing `Warehouse[organizationId, id]`, `onDelete: Restrict`)
+  - `receiptNumber`: String (Normalized identifier `GR-<PO_NUMBER>-<SEQUENCE>`, unique per organization)
+  - `idempotencyKey`: String? (Unique per organization to guarantee safe client retries and replays)
+  - `idempotencyPayloadHash`: String? (SHA-256 hash of payload for conflict detection)
+  - `notes`: String? (Optional dock receiving notes)
+  - `receivedById`: String? (User ID of the receiving actor)
+  - `receivedAt`: Timestamp with time zone (defaults to `now()`)
+  - `createdAt`, `updatedAt`: Timestamps
+- **Constraints & Indexes**:
+  - `@@unique([organizationId, receiptNumber])`
+  - `@@unique([organizationId, idempotencyKey])`
+  - `@@unique([organizationId, id])`
+  - Composite FK to `PurchaseOrder`: `[organizationId, purchaseOrderId] -> PurchaseOrder[organizationId, id]` (`onDelete: Restrict`)
+  - Composite FK to `Warehouse`: `[organizationId, warehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`)
+  - Indexes on `[organizationId]`, `[organizationId, purchaseOrderId]`, `[organizationId, warehouseId]`, `[organizationId, receivedAt]`.
+
+### GoodsReceiptLine (Physical Receipt Line Item)
+
+- **Purpose**: Authoritative record of received quantity for a specific purchase order line and product.
+- **Fields**:
+  - `id`: UUID primary key
+  - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+  - `goodsReceiptId`: String (FK referencing `GoodsReceipt[organizationId, id]`, `onDelete: Cascade`)
+  - `purchaseOrderLineId`: String (FK referencing `PurchaseOrderLine[organizationId, id]`, `onDelete: Restrict`)
+  - `productId`: String (FK referencing `Product[organizationId, id]`, `onDelete: Restrict`)
+  - `quantityReceived`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+  - `createdAt`: Timestamp with time zone
+- **Constraints & Indexes**:
+  - `@@unique([organizationId, id])`
+  - Composite FK to `GoodsReceipt`: `[organizationId, goodsReceiptId] -> GoodsReceipt[organizationId, id]` (`onDelete: Cascade`)
+  - Composite FK to `PurchaseOrderLine`: `[organizationId, purchaseOrderLineId] -> PurchaseOrderLine[organizationId, id]` (`onDelete: Restrict`)
+  - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`)
+  - PostgreSQL Check Constraint: `CHECK ("quantityReceived" > 0)`
+  - Indexes on `[organizationId]`, `[organizationId, goodsReceiptId]`, `[organizationId, purchaseOrderLineId]`, `[organizationId, productId]`.

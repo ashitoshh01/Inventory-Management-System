@@ -53,10 +53,13 @@
 ## Purchasing
 
 - [ ] suppliers
-- [ ] purchase orders
-- [ ] approval
-- [ ] receiving
-- [ ] partial receiving
+- [x] purchase orders
+- [x] approval
+- [x] receiving
+- [x] partial receiving
+- [x] procurement metrics & operational dashboard
+- [x] live inventory reconciliation (PO lines ↔ GoodsReceipt ↔ StockLedger ↔ StockBalance)
+- [x] audit history timeline
 
 ## Sales
 

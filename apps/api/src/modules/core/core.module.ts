@@ -1,8 +1,9 @@
 import { Global, Module } from '@nestjs/common';
+import { IdempotencyService } from './services/idempotency.service';
 
 @Global()
 @Module({
-  providers: [],
-  exports: [],
+  providers: [IdempotencyService],
+  exports: [IdempotencyService],
 })
 export class CoreModule {}

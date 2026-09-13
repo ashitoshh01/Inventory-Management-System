@@ -65,96 +65,7 @@ export class StockMutationService {
 
       try {
         mutationResult = await this.prisma.$transaction(
-          async (tx) => {
-            // A. Ensure StockBalance row exists safely without race condition
-            await tx.$executeRaw`
-              INSERT INTO "StockBalance" ("id", "organizationId", "productId", "warehouseId", "quantity", "createdAt", "updatedAt")
-              VALUES (gen_random_uuid(), ${input.organizationId}, ${input.productId}, ${input.warehouseId}, 0, NOW(), NOW())
-              ON CONFLICT ("organizationId", "productId", "warehouseId") DO NOTHING;
-            `;
-
-            // B. Acquire exclusive row lock on the StockBalance
-            const lockedRows = await tx.$queryRaw<LockedBalanceRow[]>`
-              SELECT id, quantity FROM "StockBalance"
-              WHERE "organizationId" = ${input.organizationId}
-                AND "productId" = ${input.productId}
-                AND "warehouseId" = ${input.warehouseId}
-              FOR UPDATE;
-            `;
-
-            if (!lockedRows || lockedRows.length === 0 || !lockedRows[0]) {
-              throw new Error('Failed to acquire row lock on StockBalance');
-            }
-
-            const lockedBalance = lockedRows[0];
-            const currentQuantityStr = lockedBalance.quantity.toFixed(
-              StockQuantityValidator.MAX_SCALE,
-            );
-
-            // C. Validate OPENING stock invariants
-            if (input.type === 'OPENING') {
-              if (!QuantityUtil.isZero(currentQuantityStr)) {
-                throw new StockOpeningBalanceInvalidStateException(
-                  `Opening stock can only be established on a zero balance; current balance is ${currentQuantityStr}`,
-                );
-              }
-
-              const priorHistoryCount = await tx.stockLedgerEntry.count({
-                where: {
-                  organizationId: input.organizationId,
-                  productId: input.productId,
-                  warehouseId: input.warehouseId,
-                },
-              });
-
-              if (priorHistoryCount > 0) {
-                throw new StockOpeningBalanceInvalidStateException(
-                  'Opening stock cannot be applied because ledger history already exists for this balance',
-                );
-              }
-            }
-
-            // D. Calculate new quantity and assert non-negative invariant
-            const newQuantityStr = StockQuantityValidator.calculateNewQuantity(
-              currentQuantityStr,
-              normDelta,
-            );
-            StockQuantityValidator.assertNonNegative(newQuantityStr);
-
-            // E. Update StockBalance with new quantity
-            const updatedBalance = await tx.stockBalance.update({
-              where: { id: lockedBalance.id },
-              data: {
-                quantity: new Prisma.Decimal(newQuantityStr),
-              },
-            });
-
-            // F. Insert immutable StockLedgerEntry
-            const createdLedger = await tx.stockLedgerEntry.create({
-              data: {
-                organizationId: input.organizationId,
-                productId: input.productId,
-                warehouseId: input.warehouseId,
-                quantityBefore: new Prisma.Decimal(currentQuantityStr),
-                quantityDelta: new Prisma.Decimal(normDelta),
-                quantityAfter: new Prisma.Decimal(newQuantityStr),
-                type: input.type,
-                referenceType: input.referenceType ?? null,
-                referenceId: input.referenceId ?? null,
-                idempotencyKey: idempotencyKey ?? null,
-                createdById: input.actorUserId ?? null,
-                metadata: input.metadata
-                  ? (input.metadata as Prisma.InputJsonValue)
-                  : Prisma.DbNull,
-              },
-            });
-
-            return {
-              balance: this.mapBalanceToDto(updatedBalance),
-              ledgerEntry: this.mapLedgerEntryToDto(createdLedger),
-              isIdempotentReplay: false,
-            };
-          },
+          async (tx) => this.mutateStockTx(tx, input),
           {
             timeout: 15000,
           },
@@ -204,6 +115,103 @@ export class StockMutationService {
 
       return mutationResult;
     });
+  }
+
+  /**
+   * Executes a stock mutation directly within an existing interactive transaction client.
+   * Atomically locks StockBalance with FOR UPDATE, applies delta, updates balance, and appends StockLedgerEntry.
+   */
+  async mutateStockTx(
+    tx: Prisma.TransactionClient,
+    input: StockMutationInput,
+  ): Promise<StockMutationResult> {
+    const normDelta = StockQuantityValidator.validateMutationDelta(input.type, input.quantityDelta);
+    const idempotencyKey = input.idempotencyKey?.trim() || undefined;
+
+    // A. Ensure StockBalance row exists safely without race condition
+    await tx.$executeRaw`
+      INSERT INTO "StockBalance" ("id", "organizationId", "productId", "warehouseId", "quantity", "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${input.organizationId}, ${input.productId}, ${input.warehouseId}, 0, NOW(), NOW())
+      ON CONFLICT ("organizationId", "productId", "warehouseId") DO NOTHING;
+    `;
+
+    // B. Acquire exclusive row lock on the StockBalance
+    const lockedRows = await tx.$queryRaw<LockedBalanceRow[]>`
+      SELECT id, quantity FROM "StockBalance"
+      WHERE "organizationId" = ${input.organizationId}
+        AND "productId" = ${input.productId}
+        AND "warehouseId" = ${input.warehouseId}
+      FOR UPDATE;
+    `;
+
+    if (!lockedRows || lockedRows.length === 0 || !lockedRows[0]) {
+      throw new Error('Failed to acquire row lock on StockBalance');
+    }
+
+    const lockedBalance = lockedRows[0];
+    const currentQuantityStr = lockedBalance.quantity.toFixed(StockQuantityValidator.MAX_SCALE);
+
+    // C. Validate OPENING stock invariants
+    if (input.type === 'OPENING') {
+      if (!QuantityUtil.isZero(currentQuantityStr)) {
+        throw new StockOpeningBalanceInvalidStateException(
+          `Opening stock can only be established on a zero balance; current balance is ${currentQuantityStr}`,
+        );
+      }
+
+      const priorHistoryCount = await tx.stockLedgerEntry.count({
+        where: {
+          organizationId: input.organizationId,
+          productId: input.productId,
+          warehouseId: input.warehouseId,
+        },
+      });
+
+      if (priorHistoryCount > 0) {
+        throw new StockOpeningBalanceInvalidStateException(
+          'Opening stock cannot be applied because ledger history already exists for this balance',
+        );
+      }
+    }
+
+    // D. Calculate new quantity and assert non-negative invariant
+    const newQuantityStr = StockQuantityValidator.calculateNewQuantity(
+      currentQuantityStr,
+      normDelta,
+    );
+    StockQuantityValidator.assertNonNegative(newQuantityStr);
+
+    // E. Update StockBalance with new quantity
+    const updatedBalance = await tx.stockBalance.update({
+      where: { id: lockedBalance.id },
+      data: {
+        quantity: new Prisma.Decimal(newQuantityStr),
+      },
+    });
+
+    // F. Insert immutable StockLedgerEntry
+    const createdLedger = await tx.stockLedgerEntry.create({
+      data: {
+        organizationId: input.organizationId,
+        productId: input.productId,
+        warehouseId: input.warehouseId,
+        quantityBefore: new Prisma.Decimal(currentQuantityStr),
+        quantityDelta: new Prisma.Decimal(normDelta),
+        quantityAfter: new Prisma.Decimal(newQuantityStr),
+        type: input.type,
+        referenceType: input.referenceType ?? null,
+        referenceId: input.referenceId ?? null,
+        idempotencyKey: idempotencyKey ?? null,
+        createdById: input.actorUserId ?? null,
+        metadata: input.metadata ? (input.metadata as Prisma.InputJsonValue) : Prisma.DbNull,
+      },
+    });
+
+    return {
+      balance: this.mapBalanceToDto(updatedBalance),
+      ledgerEntry: this.mapLedgerEntryToDto(createdLedger),
+      isIdempotentReplay: false,
+    };
   }
 
   /**

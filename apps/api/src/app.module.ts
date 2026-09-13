@@ -12,6 +12,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { StockModule } from './modules/stock/stock.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StockModule } from './modules/stock/stock.module';
     ProductsModule,
     WarehousesModule,
     StockModule,
+    PurchaseOrdersModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

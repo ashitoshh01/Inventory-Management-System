@@ -371,3 +371,77 @@ Phase 5C exposes the production Stock REST API layer conforming to strict separa
 5. **Tenant Isolation & IDOR Protection**:
    - Context is securely sourced from authenticated membership via `x-organization-id`.
    - Lookups across tenant boundaries return HTTP `404 Not Found`. Mass assignment of tenant fields is rejected with HTTP `400 Bad Request`.
+
+## Phase 6A Purchase Order / Procurement Foundation Architecture
+
+Phase 6A establishes the domain and persistence foundation for procurement via the `PurchaseOrder` aggregate:
+
+1. **Purchase Order Aggregate & Tenant Boundaries**:
+   - The aggregate root is `PurchaseOrder` containing child entity collection `PurchaseOrderLine[]`.
+   - Tenant safety is enforced at the database level via composite foreign keys:
+     - `PurchaseOrder.warehouse` -> `Warehouse(organizationId, id)` (`onDelete: Restrict`)
+     - `PurchaseOrderLine.purchaseOrder` -> `PurchaseOrder(organizationId, id)` (`onDelete: Cascade`)
+     - `PurchaseOrderLine.product` -> `Product(organizationId, id)` (`onDelete: Restrict`)
+   - Cross-tenant references are rejected at the PostgreSQL engine level.
+
+2. **Decoupled Stock Boundary**:
+   - Purchase Orders represent **intent to purchase**, not physical inventory receipt.
+   - Creating, submitting, or approving a Purchase Order does **NOT** alter `StockBalance` and does **NOT** write `StockLedgerEntry` records.
+   - Stock increases will occur strictly during future goods receipt workflows invoking `StockMutationService.executeMutation({ type: 'RECEIPT', ... })`.
+
+3. **Centralized Deterministic State Machine**:
+   - Status transitions follow `DRAFT → SUBMITTED → APPROVED → PARTIALLY_RECEIVED → RECEIVED → CLOSED` (with explicit `CANCELLED` states).
+   - Governed by `PurchaseOrderStateMachine` and `StateMachineUtil`. Illegal transitions fail with `PurchaseOrderInvalidTransitionException`.
+
+4. **Authoritative Monetary & Quantity Arithmetic**:
+   - Fixed-point PostgreSQL `DECIMAL(14, 4)` is used for all monetary values (`unitPrice`, `lineTotal`, `subtotal`, `taxTotal`, `grandTotal`) and quantities.
+   - Line totals and order subtotals are calculated authoritatively server-side using `Prisma.Decimal` arbitrary-precision arithmetic. Client-supplied totals are rejected/ignored.
+   - PostgreSQL check constraints enforce non-negative prices, positive quantities, and exact total parity.
+
+5. **Atomic Transactional Boundary**:
+   - Creation of a Purchase Order along with its lines executes within an atomic Prisma transaction (`prisma.$transaction`). Failure on any line rolls back the entire aggregate.
+
+## Phase 6D Purchase Order Receiving & Inventory Integration Architecture
+
+1. **Controlled Transactional Bridge**:
+   - The boundary between procurement intent (`PurchaseOrder`) and physical inventory (`StockBalance` / `StockLedgerEntry`) is bridged strictly via `POST /api/v1/purchase-orders/:id/receive`.
+   - The entire receiving workflow executes inside a single outer interactive transaction (`prisma.$transaction(async (tx) => { ... })`). There are zero split transactions or detached stock updates.
+   - Authoritative inventory mutation is performed solely through `StockMutationService.mutateStockTx(tx, ...)` with `type: 'RECEIPT'`, referenceType `'PURCHASE_ORDER'`, referenceId `purchaseOrder.id`.
+
+2. **Concurrency & Race Condition Safety**:
+   - Explicit PostgreSQL row locks (`SELECT ... FOR UPDATE`) are acquired inside the transaction for:
+     - The `PurchaseOrder` row
+     - All `PurchaseOrderLine` rows for that purchase order
+     - Target `StockBalance` rows (locked within `StockMutationService.mutateStockTx`)
+   - Concurrent receipt requests serialize deterministically. If multiple requests attempt to receive simultaneously, PostgreSQL row-level locks prevent over-receiving, duplicate receipt numbers, or race conditions.
+
+3. **Zero Over-Receiving Invariant**:
+   - Over-receiving beyond the line's ordered quantity is strictly disallowed:
+     `currentReceived + quantityToReceive <= quantityOrdered`
+   - Enforced at three levels:
+     - API payload validation (`quantity > 0`, 4 decimal places)
+     - Application transaction validation with locked rows (`PurchaseOrderOverReceiptException`)
+     - Database-level check constraint on `PurchaseOrderLine`: `CHECK ("receivedQuantity" <= "quantity")`
+
+4. **Audit Trail & GoodsReceipt Aggregate**:
+   - Every receipt creates an immutable `GoodsReceipt` audit record with sequential numbering (`GR-<PO_NUMBER>-<SEQUENCE>`), receiving timestamp, actor ID, and child `GoodsReceiptLine` records.
+   - Database-level check constraint ensures `GoodsReceiptLine.quantityReceived > 0`.
+   - An `AuditEvent` is persisted transactionally with action `'purchase-order.received'`, capturing PO number, goods receipt ID, receipt number, previous status, new status, and line items received.
+
+5. **State Machine Progressions**:
+   - When some lines or partial quantities are received: transitions to `PARTIALLY_RECEIVED`.
+   - When all lines are fully received (`receivedQuantity >= quantity` on every line): transitions to `RECEIVED`.
+   - Idempotent replays preserve current order state without re-mutating stock or re-updating lines.
+
+6. **Stock Ledger Reference Semantics & Traceability**:
+   - **Primary Reference**: `referenceType: 'PURCHASE_ORDER'`, `referenceId: purchaseOrder.id`. This intentionally anchors the inventory ledger to the authoritative commercial procurement contract, ensuring backward compatibility across all financial and purchasing reporting.
+   - **Operational Traceability**: Exact receipt execution is unambiguously tracked in `StockLedgerEntry.metadata`:
+     ```json
+     {
+       "purchaseOrderNumber": "PO-2026-0001",
+       "purchaseOrderLineId": "<uuid>",
+       "goodsReceiptId": "<uuid>",
+       "goodsReceiptNumber": "GR-PO-2026-0001-1"
+     }
+     ```
+   - **Bidirectional Traceability**: Any `StockLedgerEntry` can be resolved immediately to its corresponding `GoodsReceipt` via `metadata.goodsReceiptId`, and any `GoodsReceipt` line maps directly to its ledger entry via `referenceId = purchaseOrder.id` and `metadata.goodsReceiptId = receipt.id`.
