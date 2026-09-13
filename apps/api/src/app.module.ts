@@ -14,6 +14,7 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { StockModule } from './modules/stock/stock.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { TransfersModule } from './modules/transfers/transfers.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { TransfersModule } from './modules/transfers/transfers.module';
     StockModule,
     PurchaseOrdersModule,
     TransfersModule,
+    DashboardModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

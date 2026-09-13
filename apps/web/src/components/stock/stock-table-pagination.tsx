@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { cn } from '@repo/ui';
 
 export interface StockTablePaginationProps {
   page: number;
@@ -26,11 +26,14 @@ export function StockTablePagination({
   const normalizedTotalPages = Math.max(1, totalPages);
 
   const getPageNumbers = (): (number | 'ellipsis')[] => {
-    if (normalizedTotalPages <= 5) {
+    if (normalizedTotalPages <= 7) {
       return Array.from({ length: normalizedTotalPages }, (_, i) => i + 1);
     }
 
-    const pages: (number | 'ellipsis')[] = [1];
+    const pages: (number | 'ellipsis')[] = [];
+
+    // Always show first 1 or 2
+    pages.push(1);
 
     if (page > 3) {
       pages.push('ellipsis');
@@ -57,91 +60,85 @@ export function StockTablePagination({
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row border-t border-border">
-      {/* Result range counter */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <span>
-          Showing <span className="font-medium text-foreground">{startItem}</span>–
-          <span className="font-medium text-foreground">{endItem}</span> of{' '}
-          <span className="font-medium text-foreground">{total}</span> results
-        </span>
+    <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 px-6 py-4 sm:flex-row">
+      {/* 1. Showing range */}
+      <div className="text-xs text-slate-500">
+        Showing <span className="font-semibold text-slate-700">{startItem}</span> to{' '}
+        <span className="font-semibold text-slate-700">{endItem}</span> of{' '}
+        <span className="font-semibold text-slate-700">{total.toLocaleString()}</span> results
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-        {/* Page size selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground hidden sm:inline">Rows per page:</span>
-          <div className="w-[72px]">
-            <Select value={String(limit)} onValueChange={(val) => onLimitChange(Number(val))}>
-              <SelectTrigger className="h-8 text-xs" aria-label="Rows per page">
-                <SelectValue placeholder={String(limit)} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Page navigation controls */}
+      {/* 2. Number navigation + Rows per page */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Page buttons */}
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
+          {/* Prev */}
+          <button
+            type="button"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             aria-label="Previous page"
           >
-            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          </Button>
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
-          <div className="hidden sm:flex items-center gap-1">
-            {pageNumbers.map((p, idx) => {
-              if (p === 'ellipsis') {
-                return (
-                  <span
-                    key={`ellipsis-${idx}`}
-                    className="px-2 text-xs text-muted-foreground select-none"
-                    aria-hidden="true"
-                  >
-                    …
-                  </span>
-                );
-              }
-              const isCurrent = p === page;
+          {/* Page numbers */}
+          {pageNumbers.map((p, idx) => {
+            if (p === 'ellipsis') {
               return (
-                <Button
-                  key={p}
-                  variant={isCurrent ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 min-w-[32px] px-2 text-xs"
-                  onClick={() => onPageChange(p)}
-                  aria-label={`Page ${p}`}
-                  aria-current={isCurrent ? 'page' : undefined}
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="flex h-8 w-8 items-center justify-center text-xs text-slate-400"
                 >
-                  {p}
-                </Button>
+                  ...
+                </span>
               );
-            })}
-          </div>
+            }
 
-          <span className="sm:hidden px-2 text-xs text-muted-foreground">
-            {page} / {normalizedTotalPages}
-          </span>
+            const isCurrent = p === page;
+            return (
+              <button
+                key={`page-${p}`}
+                type="button"
+                onClick={() => onPageChange(p)}
+                className={cn(
+                  'flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-semibold transition-colors',
+                  isCurrent
+                    ? 'border border-blue-600 text-blue-600 bg-blue-50/50'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                )}
+              >
+                {p}
+              </button>
+            );
+          })}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
+          {/* Next */}
+          <button
+            type="button"
             onClick={() => onPageChange(page + 1)}
-            disabled={page >= normalizedTotalPages || total === 0}
+            disabled={page >= normalizedTotalPages}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             aria-label="Next page"
           >
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-          </Button>
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Rows per page dropdown */}
+        <div className="relative">
+          <select
+            value={limit}
+            onChange={(e) => onLimitChange(Number(e.target.value))}
+            className="appearance-none rounded-lg border border-slate-200 bg-white py-1.5 pl-3 pr-7 text-xs font-medium text-slate-600 hover:bg-slate-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
+          >
+            <option value="10">10 / page</option>
+            <option value="20">20 / page</option>
+            <option value="50">50 / page</option>
+            <option value="100">100 / page</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsUUID, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsUUID, IsIn, Matches } from 'class-validator';
 import { Transform } from 'class-transformer';
 import {
   UnitOfMeasure,
@@ -52,6 +52,20 @@ export class CreateProductDto {
     message: `Product status must be one of: ${PRODUCT_STATUS_VALUES.join(', ')}`,
   })
   status?: ProductStatus;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message: 'Unit cost must be a valid decimal number with up to 4 decimal places',
+  })
+  unitCost?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message: 'Unit price must be a valid decimal number with up to 4 decimal places',
+  })
+  unitPrice?: string;
 }
 
 export class UpdateProductDto {
@@ -90,6 +104,20 @@ export class UpdateProductDto {
     message: `Product status must be one of: ${PRODUCT_STATUS_VALUES.join(', ')}`,
   })
   status?: ProductStatus;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message: 'Unit cost must be a valid decimal number with up to 4 decimal places',
+  })
+  unitCost?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+(\.\d{1,4})?$/, {
+    message: 'Unit price must be a valid decimal number with up to 4 decimal places',
+  })
+  unitPrice?: string;
 }
 
 export class QueryProductDto extends PaginationQueryDto {

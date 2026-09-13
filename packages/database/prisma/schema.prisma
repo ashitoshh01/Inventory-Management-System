@@ -159,6 +159,8 @@ model Product {
   sku            String
   description    String?
   unitOfMeasure  UnitOfMeasure @default(UNIT)
+  unitCost       Decimal?      @db.Decimal(14, 4)
+  unitPrice      Decimal?      @db.Decimal(14, 4)
   status         ProductStatus @default(ACTIVE)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

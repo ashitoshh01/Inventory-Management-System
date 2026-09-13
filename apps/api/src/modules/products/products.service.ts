@@ -83,6 +83,12 @@ export class ProductsService {
           description,
           unitOfMeasure,
           status,
+          ...(input.unitCost !== undefined && input.unitCost !== null
+            ? { unitCost: new Prisma.Decimal(input.unitCost) }
+            : {}),
+          ...(input.unitPrice !== undefined && input.unitPrice !== null
+            ? { unitPrice: new Prisma.Decimal(input.unitPrice) }
+            : {}),
         },
         include: { category: true },
       });
@@ -324,6 +330,16 @@ export class ProductsService {
       data.status = ProductValidator.validateStatus(dto.status);
     }
 
+    // 7. Unit cost
+    if (dto.unitCost !== undefined) {
+      data.unitCost = dto.unitCost !== null ? new Prisma.Decimal(dto.unitCost) : null;
+    }
+
+    // 8. Unit price
+    if (dto.unitPrice !== undefined) {
+      data.unitPrice = dto.unitPrice !== null ? new Prisma.Decimal(dto.unitPrice) : null;
+    }
+
     let updated: Product & { category?: Category | null };
     try {
       updated = await this.prisma.product.update({
@@ -447,6 +463,12 @@ export class ProductsService {
       sku: product.sku,
       description: product.description,
       unitOfMeasure: product.unitOfMeasure,
+      unitCost: product.unitCost !== null && product.unitCost !== undefined
+        ? product.unitCost.toString()
+        : null,
+      unitPrice: product.unitPrice !== null && product.unitPrice !== undefined
+        ? product.unitPrice.toString()
+        : null,
       status: product.status,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),

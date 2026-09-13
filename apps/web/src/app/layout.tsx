@@ -2,32 +2,21 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '../lib/providers';
-import { Sidebar } from '../components/layout/sidebar';
-import { Header } from '../components/layout/header';
+import { AppShell } from '../components/layout/app-shell';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Inventory Management System',
-  description: 'Phase 1E Frontend Foundation',
+  title: 'IMS - Inventory Management System',
+  description: 'Enterprise Inventory Management System',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full bg-background antialiased">
+    <html lang="en" className="h-full bg-slate-50 antialiased">
       <body className={`${inter.className} h-full`}>
         <Providers>
-          <div className="flex min-h-screen">
-            <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-              <Sidebar />
-            </div>
-            <div className="lg:pl-72 flex flex-col flex-1">
-              <Header />
-              <main className="flex-1 py-10">
-                <div className="px-4 sm:px-6 lg:px-8">{children}</div>
-              </main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>

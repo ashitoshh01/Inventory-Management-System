@@ -25,6 +25,8 @@ export interface ProductDto {
   sku: string;
   description: string | null;
   unitOfMeasure: UnitOfMeasure;
+  unitCost?: string | null | undefined;
+  unitPrice?: string | null | undefined;
   status: ProductStatus;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +39,8 @@ export interface CreateProductInput {
   sku: string;
   description?: string | null | undefined;
   unitOfMeasure?: UnitOfMeasure | undefined;
+  unitCost?: string | null | undefined;
+  unitPrice?: string | null | undefined;
   status?: ProductStatus | undefined;
 }
 
@@ -46,6 +50,8 @@ export interface UpdateProductInput {
   sku?: string | undefined;
   description?: string | null | undefined;
   unitOfMeasure?: UnitOfMeasure | undefined;
+  unitCost?: string | null | undefined;
+  unitPrice?: string | null | undefined;
   status?: ProductStatus | undefined;
 }
 
