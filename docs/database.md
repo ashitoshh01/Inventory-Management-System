@@ -474,3 +474,59 @@ Implemented in `packages/database/prisma/schema.prisma` with migration `20260913
   - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`)
   - PostgreSQL Check Constraint: `CHECK ("quantityReceived" > 0)`
   - Indexes on `[organizationId]`, `[organizationId, goodsReceiptId]`, `[organizationId, purchaseOrderLineId]`, `[organizationId, productId]`.
+
+## Phase 7A Stock Transfer Database Foundation
+
+Implemented in `packages/database/prisma/schema.prisma` with migration `20260913180000_phase7a_stock_transfers`.
+
+### StockTransfer (Transfer Header)
+
+- **Purpose**: Authoritative record of multi-item inter-warehouse stock transfer workflows.
+- **Fields**:
+  - `id`: UUID primary key (`@default(uuid())`)
+  - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+  - `transferNumber`: String (Normalized uppercase identifier `TR-YYYYMMDD-XXXX`, unique per organization)
+  - `sourceWarehouseId`: String (FK referencing `Warehouse[organizationId, id]`, `onDelete: Restrict`)
+  - `destinationWarehouseId`: String (FK referencing `Warehouse[organizationId, id]`, `onDelete: Restrict`)
+  - `status`: `StockTransferStatus` enum (`DRAFT`, `APPROVED`, `IN_TRANSIT`, `RECEIVED`, `CANCELLED`, default `DRAFT`)
+  - `notes`: String? (Optional notes, max 500 characters)
+  - `idempotencyKey`: String? (Unique per organization to guarantee safe client retries and idempotent replays)
+  - `idempotencyPayloadHash`: String? (SHA-256 hash of mutation payload)
+  - `createdById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+  - `approvedById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+  - `approvedAt`: Timestamp with time zone?
+  - `shippedById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+  - `shippedAt`: Timestamp with time zone?
+  - `receivedById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+  - `receivedAt`: Timestamp with time zone?
+  - `cancelledById`: String? (FK referencing `User.id`, `onDelete: SetNull`)
+  - `cancelledAt`: Timestamp with time zone?
+  - `cancellationReason`: String? (Required on cancellation, max 500 characters)
+  - `createdAt`, `updatedAt`: Timestamps
+- **Constraints & Indexes**:
+  - `@@unique([organizationId, id])`: Enables composite foreign key targeting from `StockTransferLine`.
+  - `@@unique([organizationId, transferNumber])`: Enforces transfer number uniqueness strictly within an organization.
+  - `@@unique([organizationId, idempotencyKey])`: Enforces idempotency key uniqueness strictly within an organization.
+  - Composite FK to Source Warehouse: `[organizationId, sourceWarehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`).
+  - Composite FK to Destination Warehouse: `[organizationId, destinationWarehouseId] -> Warehouse[organizationId, id]` (`onDelete: Restrict`).
+  - PostgreSQL Check Constraint: `StockTransfer_source_diff_dest`: `CHECK ("sourceWarehouseId" <> "destinationWarehouseId")`.
+  - Indexes on `[organizationId]`, `[organizationId, status]`, `[organizationId, sourceWarehouseId]`, `[organizationId, destinationWarehouseId]`, `[organizationId, createdAt]`.
+
+### StockTransferLine (Transfer Line Item)
+
+- **Purpose**: Authoritative itemized quantity for a specific product within a stock transfer.
+- **Fields**:
+  - `id`: UUID primary key (`@default(uuid())`)
+  - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+  - `transferId`: String (FK referencing `StockTransfer[organizationId, id]`, `onDelete: Cascade`)
+  - `productId`: String (FK referencing `Product[organizationId, id]`, `onDelete: Restrict`)
+  - `quantity`: Decimal (PostgreSQL `DECIMAL(14, 4)`)
+  - `notes`: String? (Optional line notes)
+  - `createdAt`, `updatedAt`: Timestamps
+- **Constraints & Indexes**:
+  - `@@unique([organizationId, id])`
+  - `@@unique([transferId, productId])`: Precludes duplicate lines for the same product in a single transfer.
+  - Composite FK to `StockTransfer`: `[organizationId, transferId] -> StockTransfer[organizationId, id]` (`onDelete: Cascade`).
+  - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`).
+  - PostgreSQL Check Constraint: `StockTransferLine_quantity_positive`: `CHECK ("quantity" > 0)`.
+  - Indexes on `[organizationId]`, `[organizationId, transferId]`, `[organizationId, productId]`.

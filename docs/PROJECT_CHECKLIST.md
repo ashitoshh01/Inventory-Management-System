@@ -41,7 +41,7 @@
 - [ ] stock balances
 - [ ] immutable ledger
 - [ ] adjustments
-- [ ] transfers
+- [x] transfers
 - [ ] reservations
 - [ ] stock counts
 - [ ] batch/lot

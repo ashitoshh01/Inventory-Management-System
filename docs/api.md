@@ -599,3 +599,96 @@ For inbound webhooks:
     - Parameter `:id`: UUIDv4
     - Returns array of `PurchaseOrderAuditEventDto` chronologically sorted (newest first).
     - Status: `200 OK` or `404 Not Found`.
+
+## Phase 7A Updates — Inter-Warehouse Stock Transfers
+
+- **Routing & Path Aliases**:
+  - All transfer endpoints are dual-mounted on `/api/v1/transfers` and `/api/v1/inventory/transfers`.
+- **Authorization & RBAC**:
+  - `GET /api/v1/transfers` & `GET /api/v1/transfers/:id`: `stock-transfer.read`
+  - `GET /api/v1/transfers/metrics`: `stock-transfer.read`
+  - `GET /api/v1/transfers/:id/audit-trail`: `stock-transfer.read`
+  - `POST /api/v1/transfers`: `stock-transfer.create`
+  - `PATCH /api/v1/transfers/:id`: `stock-transfer.update`
+  - `DELETE /api/v1/transfers/:id`: `stock-transfer.delete`
+  - `POST /api/v1/transfers/:id/approve`: `stock-transfer.approve`
+  - `POST /api/v1/transfers/:id/ship`: `stock-transfer.ship`
+  - `POST /api/v1/transfers/:id/receive`: `stock-transfer.receive`
+  - `POST /api/v1/transfers/:id/cancel`: `stock-transfer.cancel`
+- **Endpoints**:
+  - `GET /api/v1/transfers` — List Stock Transfers (`stock-transfer.read`)
+    - Query parameters:
+      - `page`: 1-based integer (default 1)
+      - `limit`: integer (default 20, max 100)
+      - `sortBy`: `'transferNumber'`, `'status'`, `'sourceWarehouse'`, `'destinationWarehouse'`, `'createdAt'` (default `'createdAt'`)
+      - `sortOrder`: `'ASC'` | `'DESC'` (default `'DESC'`)
+      - `status`: optional `StockTransferStatus`
+      - `sourceWarehouseId`: optional UUIDv4
+      - `destinationWarehouseId`: optional UUIDv4
+      - `search`: optional substring search matching transfer number
+      - `startDate`, `endDate`: optional ISO 8601 date filters
+    - Status: `200 OK`.
+  - `GET /api/v1/transfers/metrics` — Aggregate Transfer KPI Metrics (`stock-transfer.read`)
+    - Returns tenant-scoped counts:
+      - `totalTransfers`: count of all transfers
+      - `statusCounts`: object with counts per status (`DRAFT`, `APPROVED`, `IN_TRANSIT`, `RECEIVED`, `CANCELLED`)
+      - `totalQuantityTransferred`: total quantity successfully received across completed transfers
+      - `inTransitQuantity`: total quantity currently moving between warehouses (`IN_TRANSIT`)
+      - `activeTransfersCount`: count of transfers currently active (`APPROVED` or `IN_TRANSIT`)
+    - Status: `200 OK`.
+  - `GET /api/v1/transfers/:id` — Get Transfer Detail (`stock-transfer.read`)
+    - Parameter `:id`: UUIDv4
+    - Returns `StockTransferDto` with source & destination warehouses, itemized lines, and actor references.
+    - Status: `200 OK` or `404 Not Found`.
+  - `GET /api/v1/transfers/:id/audit-trail` — Chronological Transfer Audit Trail (`stock-transfer.read`)
+    - Parameter `:id`: UUIDv4
+    - Returns audit events recorded for this transfer (`stock-transfer.*`).
+    - Status: `200 OK` or `404 Not Found`.
+  - `POST /api/v1/transfers` — Create Stock Transfer (`stock-transfer.create`)
+    - Headers: `Idempotency-Key` (optional, string)
+    - Body (`CreateStockTransferDto`):
+      - `sourceWarehouseId`: UUIDv4
+      - `destinationWarehouseId`: UUIDv4 (must differ from `sourceWarehouseId`)
+      - `notes`: optional string (max 500 chars)
+      - `lines`: array of `{ productId: string, quantity: string, notes?: string }` (quantities > 0 with up to 4 decimal places)
+    - Status: `201 Created` with `StockTransferDto`.
+  - `PATCH /api/v1/transfers/:id` — Update Draft Transfer (`stock-transfer.update`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `DRAFT`.
+    - Body (`UpdateStockTransferDto`): partial updates (`sourceWarehouseId`, `destinationWarehouseId`, `notes`, `lines`).
+    - Status: `200 OK` or `409 Conflict` if not in `DRAFT` status.
+  - `DELETE /api/v1/transfers/:id` — Delete Draft Transfer (`stock-transfer.delete`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `DRAFT`.
+    - Status: `200 OK` or `409 Conflict` if not in `DRAFT` status.
+  - `POST /api/v1/transfers/:id/approve` — Approve Transfer (`stock-transfer.approve`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `DRAFT`. Sets `approvedById` and `approvedAt`. Status becomes `APPROVED`.
+    - Status: `200 OK`.
+  - `POST /api/v1/transfers/:id/ship` — Ship Transfer / Deduct Source Inventory (`stock-transfer.ship`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `APPROVED`.
+    - Atomically:
+      1. Locks source warehouse stock balances deterministically (ordered by `productId ASC`).
+      2. Validates available stock for each line (throws `INSUFFICIENT_STOCK` if `onHand < line.quantity`).
+      3. Deducts source inventory via authoritative `StockMutationService.mutateStockTx` with `type: 'ISSUE'`, negative `delta = -quantity`, referenceType `'STOCK_TRANSFER'`.
+      4. Sets `shippedById`, `shippedAt`, and status to `IN_TRANSIT`.
+      5. Records audit event `stock-transfer.shipped`.
+    - Status: `200 OK`.
+  - `POST /api/v1/transfers/:id/receive` — Receive Transfer / Credit Destination Inventory (`stock-transfer.receive`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `IN_TRANSIT`.
+    - Atomically:
+      1. Locks destination warehouse stock balances deterministically (ordered by `productId ASC`).
+      2. Credits destination inventory via authoritative `StockMutationService.mutateStockTx` with `type: 'RECEIPT'`, positive `delta = +quantity`, referenceType `'STOCK_TRANSFER'`.
+      3. Sets `receivedById`, `receivedAt`, and status to `RECEIVED`.
+      4. Records audit event `stock-transfer.received`.
+    - Status: `200 OK`.
+  - `POST /api/v1/transfers/:id/cancel` — Cancel Transfer (`stock-transfer.cancel`)
+    - Parameter `:id`: UUIDv4
+    - Allowed only when status is `DRAFT` or `APPROVED`.
+    - Body (`CancelStockTransferDto`):
+      - `reason`: required string (max 500 chars)
+    - Sets `cancelledById`, `cancelledAt`, `cancellationReason`, and status to `CANCELLED`.
+    - Records audit event `stock-transfer.cancelled`.
+    - Status: `200 OK` or `409 Conflict` if transfer already `IN_TRANSIT` or `RECEIVED`.

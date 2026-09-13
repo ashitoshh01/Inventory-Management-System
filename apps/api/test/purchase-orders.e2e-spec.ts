@@ -461,9 +461,11 @@ describe('Purchase Order REST API (e2e)', () => {
       expect(data.lines).toHaveLength(2);
 
       // Line 1: 12.5000 * 10.0000 = 125.0000
-      expect(data.lines[0].lineTotal).toBe('125.0000');
+      const line1 = data.lines.find((l: { productId: string }) => l.productId === prodA1Id);
+      const line2 = data.lines.find((l: { productId: string }) => l.productId === prodA2Id);
+      expect(line1?.lineTotal).toBe('125.0000');
       // Line 2: 4.2500 * 20.0000 = 85.0000
-      expect(data.lines[1].lineTotal).toBe('85.0000');
+      expect(line2?.lineTotal).toBe('85.0000');
 
       // Subtotal = 125.0000 + 85.0000 = 210.0000
       expect(data.subtotal).toBe('210.0000');

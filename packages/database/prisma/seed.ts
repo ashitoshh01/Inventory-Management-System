@@ -41,6 +41,14 @@ async function main(): Promise<void> {
         description: 'Receive inventory against approved purchase orders',
       },
       { action: 'purchase-order.cancel', description: 'Cancel purchase orders' },
+      { action: 'stock-transfer.read', description: 'View stock transfers' },
+      { action: 'stock-transfer.create', description: 'Create stock transfers' },
+      { action: 'stock-transfer.update', description: 'Update draft stock transfers' },
+      { action: 'stock-transfer.delete', description: 'Delete draft stock transfers' },
+      { action: 'stock-transfer.approve', description: 'Approve stock transfers' },
+      { action: 'stock-transfer.ship', description: 'Dispatch stock transfers' },
+      { action: 'stock-transfer.receive', description: 'Receive stock transfers' },
+      { action: 'stock-transfer.cancel', description: 'Cancel stock transfers' },
     ];
 
     for (const perm of corePermissions) {

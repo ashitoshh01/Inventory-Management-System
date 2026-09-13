@@ -20,6 +20,11 @@ model User {
   createdPurchaseOrders     PurchaseOrder[]          @relation("PurchaseOrderCreator")
   approvedPurchaseOrders    PurchaseOrder[]          @relation("PurchaseOrderApprover")
   receivedGoodsReceipts     GoodsReceipt[]           @relation("GoodsReceiptReceiver")
+  createdStockTransfers     StockTransfer[]          @relation("StockTransferCreator")
+  approvedStockTransfers    StockTransfer[]          @relation("StockTransferApprover")
+  shippedStockTransfers     StockTransfer[]          @relation("StockTransferShipper")
+  receivedStockTransfers    StockTransfer[]          @relation("StockTransferReceiver")
+  cancelledStockTransfers   StockTransfer[]          @relation("StockTransferCanceller")
 }
 
 model Organization {
@@ -40,6 +45,8 @@ model Organization {
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceipts      GoodsReceipt[]
   goodsReceiptLines  GoodsReceiptLine[]
+  stockTransfers     StockTransfer[]
+  stockTransferLines StockTransferLine[]
 }
 
 model Role {
@@ -162,6 +169,7 @@ model Product {
   stockLedgerEntries StockLedgerEntry[]
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceiptLines  GoodsReceiptLine[]
+  stockTransferLines StockTransferLine[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, sku])
@@ -197,6 +205,8 @@ model Warehouse {
   stockLedgerEntries StockLedgerEntry[]
   purchaseOrders     PurchaseOrder[]
   goodsReceipts      GoodsReceipt[]
+  outgoingTransfers  StockTransfer[]    @relation("TransferSourceWarehouse")
+  incomingTransfers  StockTransfer[]    @relation("TransferDestinationWarehouse")
 
   @@unique([organizationId, id])
   @@unique([organizationId, name])
@@ -387,5 +397,77 @@ model GoodsReceiptLine {
   @@index([organizationId, goodsReceiptId])
   @@index([organizationId, purchaseOrderLineId])
   @@index([organizationId, productId])
+}
+
+enum StockTransferStatus {
+  DRAFT
+  APPROVED
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+model StockTransfer {
+  id                     String              @id @default(uuid())
+  organizationId         String
+  transferNumber         String
+  idempotencyKey         String?
+  idempotencyPayloadHash String?
+  status                 StockTransferStatus @default(DRAFT)
+  sourceWarehouseId      String
+  destinationWarehouseId String
+  notes                  String?
+  createdById            String?
+  approvedById           String?
+  approvedAt             DateTime?
+  shippedById            String?
+  shippedAt              DateTime?
+  receivedById           String?
+  receivedAt             DateTime?
+  cancelledById          String?
+  cancelledAt            DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceWarehouse      Warehouse           @relation("TransferSourceWarehouse", fields: [organizationId, sourceWarehouseId], references: [organizationId, id], onDelete: Restrict)
+  destinationWarehouse Warehouse           @relation("TransferDestinationWarehouse", fields: [organizationId, destinationWarehouseId], references: [organizationId, id], onDelete: Restrict)
+  creator              User?               @relation("StockTransferCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approver             User?               @relation("StockTransferApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  shipper              User?               @relation("StockTransferShipper", fields: [shippedById], references: [id], onDelete: SetNull)
+  receiver             User?               @relation("StockTransferReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  canceller            User?               @relation("StockTransferCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  lines                StockTransferLine[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, transferNumber])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, sourceWarehouseId])
+  @@index([organizationId, destinationWarehouseId])
+  @@index([organizationId, createdAt])
+}
+
+model StockTransferLine {
+  id             String        @id @default(uuid())
+  organizationId String
+  transferId     String
+  productId      String
+  quantity       Decimal       @db.Decimal(14, 4)
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transfer     StockTransfer @relation(fields: [organizationId, transferId], references: [organizationId, id], onDelete: Cascade)
+  product      Product       @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, transferId, productId])
+  @@index([organizationId])
+  @@index([organizationId, transferId])
+  @@index([organizationId, productId])
+  @@index([organizationId, createdAt])
 }
 

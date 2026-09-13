@@ -445,3 +445,34 @@ Phase 6A establishes the domain and persistence foundation for procurement via t
      }
      ```
    - **Bidirectional Traceability**: Any `StockLedgerEntry` can be resolved immediately to its corresponding `GoodsReceipt` via `metadata.goodsReceiptId`, and any `GoodsReceipt` line maps directly to its ledger entry via `referenceId = purchaseOrder.id` and `metadata.goodsReceiptId = receipt.id`.
+
+## Phase 7A Inter-Warehouse Stock Transfers Architecture
+
+1. **Zero Direct Mutation & Authoritative Delegation**:
+   - Stock transfers NEVER directly mutate `StockBalance` or insert into `StockLedgerEntry`.
+   - All inventory changes MUST delegate to `StockMutationService.mutateStockTx` inside the transfer transition transaction.
+
+2. **In-Transit Separation & Conservation of Inventory**:
+   - Inter-warehouse transfers separate source dispatch from destination receipt across time:
+     - **Dispatch (`POST /:id/ship`)**: Status transitions `APPROVED → IN_TRANSIT`. Stock is deducted from the source warehouse via `mutateStockTx` with `type: 'ISSUE'`, `quantityDelta: -quantity`, `referenceType: 'STOCK_TRANSFER'`, `referenceId: transfer.id`.
+     - **Receipt (`POST /:id/receive`)**: Status transitions `IN_TRANSIT → RECEIVED`. Stock is credited to the destination warehouse via `mutateStockTx` with `type: 'RECEIPT'`, `quantityDelta: +quantity`, `referenceType: 'STOCK_TRANSFER'`, `referenceId: transfer.id`.
+   - Net inventory across both warehouses is strictly conserved: `(-quantity) + (+quantity) = 0`. Stock cannot be created from nothing or lost during transit.
+
+3. **Deterministic Deadlock Prevention**:
+   - Transfers containing multiple product lines sort lines strictly by `productId` ascending (`lines.sort((a, b) => a.productId.localeCompare(b.productId))`) prior to executing stock mutations within the transaction. This guarantees a consistent row-locking acquisition order on `StockBalance` rows, preventing concurrency deadlocks under high load.
+
+4. **Strict State Machine**:
+   - `DRAFT → APPROVED → IN_TRANSIT → RECEIVED`
+   - Cancellation is allowed exclusively from `DRAFT` and `APPROVED`. Once `IN_TRANSIT` or `RECEIVED`, cancellation is rejected with `StockTransferInvalidTransitionException`.
+   - No partial transfers or split line shipments are permitted.
+
+5. **Idempotency & Replay Protection**:
+   - Creation, shipping, and receiving support client-provided `Idempotency-Key` headers.
+   - Replaying requests with identical payloads returns cached `200 OK` with zero duplicate stock mutations.
+   - Replaying requests with mismatched parameters triggers `409 Conflict`.
+
+6. **Multi-Tenant Isolation & Foreign Key Invariants**:
+   - Composite foreign keys `[organizationId, sourceWarehouseId]`, `[organizationId, destinationWarehouseId]`, and `[organizationId, productId]` enforce tenant isolation at the PostgreSQL storage engine level.
+   - Check constraint `StockTransfer_source_diff_dest`: `CHECK ("sourceWarehouseId" <> "destinationWarehouseId")`.
+   - Check constraint `StockTransferLine_quantity_positive`: `CHECK ("quantity" > 0)`.
+   - Unique constraint `[organizationId, transferId, productId]` prevents duplicate line items on a transfer.

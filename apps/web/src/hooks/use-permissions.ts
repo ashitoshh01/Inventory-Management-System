@@ -19,6 +19,14 @@ export interface PermissionsState {
   canApprovePurchaseOrder: boolean;
   canCancelPurchaseOrder: boolean;
   canReceivePurchaseOrder: boolean;
+  canReadTransfers: boolean;
+  canCreateTransfer: boolean;
+  canUpdateTransfer: boolean;
+  canDeleteTransfer: boolean;
+  canApproveTransfer: boolean;
+  canShipTransfer: boolean;
+  canReceiveTransfer: boolean;
+  canCancelTransfer: boolean;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -43,6 +51,14 @@ export function usePermissions(): PermissionsState {
       canApprovePurchaseOrder: true,
       canCancelPurchaseOrder: true,
       canReceivePurchaseOrder: true,
+      canReadTransfers: true,
+      canCreateTransfer: true,
+      canUpdateTransfer: true,
+      canDeleteTransfer: true,
+      canApproveTransfer: true,
+      canShipTransfer: true,
+      canReceiveTransfer: true,
+      canCancelTransfer: true,
       hasPermission: () => true,
     };
   }
@@ -67,6 +83,14 @@ export function usePermissions(): PermissionsState {
     'purchase-order.approve',
     'purchase-order.cancel',
     'purchase-order.receive',
+    'stock-transfer.read',
+    'stock-transfer.create',
+    'stock-transfer.update',
+    'stock-transfer.delete',
+    'stock-transfer.approve',
+    'stock-transfer.ship',
+    'stock-transfer.receive',
+    'stock-transfer.cancel',
   ];
   if (stored) {
     try {
@@ -97,6 +121,14 @@ export function usePermissions(): PermissionsState {
     canApprovePurchaseOrder: hasPermission('purchase-order.approve'),
     canCancelPurchaseOrder: hasPermission('purchase-order.cancel'),
     canReceivePurchaseOrder: hasPermission('purchase-order.receive'),
+    canReadTransfers: hasPermission('stock-transfer.read'),
+    canCreateTransfer: hasPermission('stock-transfer.create'),
+    canUpdateTransfer: hasPermission('stock-transfer.update'),
+    canDeleteTransfer: hasPermission('stock-transfer.delete'),
+    canApproveTransfer: hasPermission('stock-transfer.approve'),
+    canShipTransfer: hasPermission('stock-transfer.ship'),
+    canReceiveTransfer: hasPermission('stock-transfer.receive'),
+    canCancelTransfer: hasPermission('stock-transfer.cancel'),
     hasPermission,
   };
 }
