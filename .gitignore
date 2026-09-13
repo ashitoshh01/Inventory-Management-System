@@ -41,5 +41,5 @@ Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
-*.sw?
+# TypeScript build cache
+*.tsbuildinfo

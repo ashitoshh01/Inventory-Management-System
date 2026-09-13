@@ -20,6 +20,10 @@ class DashboardQueryDto {
   @IsOptional()
   @IsString()
   endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  timeframe?: string;
 }
 
 @Controller('dashboard')
@@ -55,5 +59,23 @@ export class DashboardController {
   @RequirePermissions('stock.read')
   async getRecentActivities(@CurrentOrganization() org: Organization) {
     return this.dashboardService.getRecentActivities(org.id);
+  }
+
+  @Get('sales-overview')
+  @RequirePermissions('stock.read')
+  async getSalesOverview(
+    @CurrentOrganization() org: Organization,
+    @Query() query: DashboardQueryDto,
+  ) {
+    return this.dashboardService.getSalesOverview(org.id, query);
+  }
+
+  @Get('top-selling-products')
+  @RequirePermissions('stock.read')
+  async getTopSellingProducts(
+    @CurrentOrganization() org: Organization,
+    @Query() query: DashboardQueryDto,
+  ) {
+    return this.dashboardService.getTopSellingProducts(org.id, query);
   }
 }

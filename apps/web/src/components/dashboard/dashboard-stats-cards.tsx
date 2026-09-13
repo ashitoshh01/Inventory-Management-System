@@ -29,6 +29,7 @@ export function DashboardStatsCards({
   }
 
   const inventoryValue = stats?.totalInventoryValue ? parseFloat(stats.totalInventoryValue) : 0;
+  const todaysSalesValue = stats?.todaysSales ? parseFloat(stats.todaysSales) : 0;
 
   const formattedInventoryValue = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -38,9 +39,18 @@ export function DashboardStatsCards({
     .format(inventoryValue)
     .replace('$', currencySymbol);
 
+  const formattedTodaysSales = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  })
+    .format(todaysSalesValue)
+    .replace('$', currencySymbol);
+
   const totalProducts = stats?.totalProducts ?? 0;
   const lowStock = stats?.lowStockCount ?? 0;
   const outOfStock = stats?.outOfStockCount ?? 0;
+  const todaysOrders = stats?.todaysOrdersCount ?? 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -58,7 +68,7 @@ export function DashboardStatsCards({
           </div>
         </div>
         <div className="mt-3 flex items-center text-xs text-slate-400">
-          <span>vs last 7 days</span>
+          <span>Authoritative valuation</span>
         </div>
       </div>
 
@@ -71,9 +81,6 @@ export function DashboardStatsCards({
               <h3 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                 {totalProducts.toLocaleString()}
               </h3>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-600">
-                <TrendingUp className="h-3 w-3" /> 8.3%
-              </span>
             </div>
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -81,7 +88,7 @@ export function DashboardStatsCards({
           </div>
         </div>
         <div className="mt-3 flex items-center text-xs text-slate-400">
-          <span>vs last 7 days</span>
+          <span>Active catalog items</span>
         </div>
       </div>
 
@@ -94,9 +101,6 @@ export function DashboardStatsCards({
               <h3 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                 {lowStock.toLocaleString()}
               </h3>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600">
-                <TrendingUp className="h-3 w-3" /> 5.6%
-              </span>
             </div>
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
@@ -104,7 +108,7 @@ export function DashboardStatsCards({
           </div>
         </div>
         <div className="mt-3 flex items-center text-xs text-slate-400">
-          <span>vs last 7 days</span>
+          <span>Threshold &le; 10 units</span>
         </div>
       </div>
 
@@ -117,9 +121,6 @@ export function DashboardStatsCards({
               <h3 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                 {outOfStock.toLocaleString()}
               </h3>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-600">
-                <TrendingUp className="h-3 w-3" /> 3.1%
-              </span>
             </div>
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
@@ -127,7 +128,7 @@ export function DashboardStatsCards({
           </div>
         </div>
         <div className="mt-3 flex items-center text-xs text-slate-400">
-          <span>vs last 7 days</span>
+          <span>0 units available</span>
         </div>
       </div>
 
@@ -138,11 +139,8 @@ export function DashboardStatsCards({
             <p className="text-xs font-medium text-slate-500">Today&apos;s Sales</p>
             <div className="mt-2 flex items-baseline gap-2">
               <h3 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                {currencySymbol}0.00
+                {formattedTodaysSales}
               </h3>
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-600">
-                <TrendingUp className="h-3 w-3" /> 0.0%
-              </span>
             </div>
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -150,7 +148,7 @@ export function DashboardStatsCards({
           </div>
         </div>
         <div className="mt-3 flex items-center text-xs text-slate-400">
-          <span>vs last 7 days</span>
+          <span>{todaysOrders} {todaysOrders === 1 ? 'order' : 'orders'} placed today</span>
         </div>
       </div>
     </div>

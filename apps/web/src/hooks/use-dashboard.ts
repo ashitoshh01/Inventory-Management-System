@@ -20,6 +20,10 @@ export const dashboardKeys = {
   stockStatus: (orgId?: string, params?: DashboardQueryParams) =>
     [...dashboardKeys.all(orgId), 'stock-status', params] as const,
   recentActivities: (orgId?: string) => [...dashboardKeys.all(orgId), 'recent-activities'] as const,
+  salesOverview: (orgId?: string, params?: DashboardQueryParams) =>
+    [...dashboardKeys.all(orgId), 'sales-overview', params] as const,
+  topSellingProducts: (orgId?: string, params?: DashboardQueryParams) =>
+    [...dashboardKeys.all(orgId), 'top-selling-products', params] as const,
 };
 
 export function useDashboardStats(params?: DashboardQueryParams, orgId?: string) {
@@ -53,3 +57,20 @@ export function useRecentActivities(orgId?: string) {
     queryFn: () => dashboardApi.getRecentActivities(),
   });
 }
+
+export function useSalesOverview(params?: DashboardQueryParams, orgId?: string) {
+  const currentOrgId = orgId ?? getActiveOrgId();
+  return useQuery({
+    queryKey: dashboardKeys.salesOverview(currentOrgId, params),
+    queryFn: () => dashboardApi.getSalesOverview(params),
+  });
+}
+
+export function useTopSellingProducts(params?: DashboardQueryParams, orgId?: string) {
+  const currentOrgId = orgId ?? getActiveOrgId();
+  return useQuery({
+    queryKey: dashboardKeys.topSellingProducts(currentOrgId, params),
+    queryFn: () => dashboardApi.getTopSellingProducts(params),
+  });
+}
+

@@ -14,7 +14,10 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { StockModule } from './modules/stock/stock.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { TransfersModule } from './modules/transfers/transfers.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { SalesOrdersModule } from './modules/sales-orders/sales-orders.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -34,7 +37,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     StockModule,
     PurchaseOrdersModule,
     TransfersModule,
+    CustomersModule,
+    SalesOrdersModule,
     DashboardModule,
+    ReportsModule,
   ],
   providers: [StructuredLogger],
   exports: [StructuredLogger],

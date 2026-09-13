@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
   Building2,
   Tags,
+  BarChart3,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -48,6 +49,19 @@ const navigation: NavItem[] = [
     icon: ShoppingCart,
   },
   { name: 'Transfers', href: '/transfers', icon: ArrowLeftRight },
+  {
+    name: 'Reports',
+    href: '/reports',
+    icon: BarChart3,
+    children: [
+      { name: 'Reports Hub', href: '/reports' },
+      { name: 'Stock Movements', href: '/reports/stock-movement' },
+      { name: 'Inventory Valuation', href: '/reports/inventory-valuation' },
+      { name: 'Reconciliation', href: '/reports/reconciliation' },
+      { name: 'Procurement', href: '/reports/procurement' },
+      { name: 'Sales Summary', href: '/reports/sales' },
+    ],
+  },
 ];
 
 function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: boolean }) {

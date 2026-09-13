@@ -16,3 +16,7 @@ export * from './stock.js';
 export * from './purchase-order.js';
 export * from './stock-transfer.js';
 export * from './dashboard.js';
+export * from './customer.js';
+export * from './sales-order.js';
+export * from './reports.js';
+

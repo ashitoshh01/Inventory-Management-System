@@ -3,21 +3,39 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Package, TrendingUp } from 'lucide-react';
+import { useTopSellingProducts } from '../../hooks/use-dashboard';
+import type { DashboardQueryParams } from '@repo/types';
 
 interface TopSellingProductsProps {
+  queryParams?: DashboardQueryParams;
   className?: string;
+  currencySymbol?: string;
 }
 
-export function TopSellingProducts({ className }: TopSellingProductsProps) {
-  // Sales orders/POS module is not yet implemented in backend.
-  // We explicitly present empty state rather than hardcoding fake data.
-  const products: Array<{
-    id: string;
-    name: string;
-    variant: string;
-    soldQty: number;
-    revenue: string;
-  }> = [];
+export function TopSellingProducts({
+  queryParams,
+  className,
+  currencySymbol = '$',
+}: TopSellingProductsProps) {
+  const { data: productsResponse, isLoading } = useTopSellingProducts(queryParams);
+  const products = productsResponse?.data || [];
+
+  if (isLoading) {
+    return (
+      <div
+        className={`flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm ${
+          className || ''
+        }`}
+      >
+        <div className="h-6 w-36 animate-pulse rounded bg-slate-100" />
+        <div className="mt-4 space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded-lg bg-slate-50" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -62,12 +80,15 @@ export function TopSellingProducts({ className }: TopSellingProductsProps) {
                       </div>
                       <div>
                         <div className="font-semibold text-slate-800">{p.name}</div>
-                        <div className="text-[11px] text-slate-400">{p.variant}</div>
+                        <div className="text-[11px] text-slate-400">{p.sku}</div>
                       </div>
                     </div>
                   </td>
                   <td className="py-2.5 text-center font-semibold text-slate-700">{p.soldQty}</td>
-                  <td className="py-2.5 text-right font-semibold text-slate-800">{p.revenue}</td>
+                  <td className="py-2.5 text-right font-semibold text-slate-800">
+                    {currencySymbol}
+                    {parseFloat(p.revenue).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>

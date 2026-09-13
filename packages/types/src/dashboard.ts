@@ -9,6 +9,8 @@ export interface DashboardStatsDto {
   lowStockCount: number;
   outOfStockCount: number;
   totalInventoryValue: string; // Exact decimal representation
+  todaysSales: string; // Exact decimal representation of sales created today
+  todaysOrdersCount: number;
 }
 
 export interface InventoryByCategoryDto {
@@ -36,8 +38,25 @@ export interface RecentActivityDto {
   actorEmail: string | null;
 }
 
+export interface SalesOverviewPointDto {
+  day: string;
+  date: string;
+  thisPeriod: number;
+  lastPeriod: number;
+}
+
+export interface TopSellingProductDto {
+  id: string;
+  name: string;
+  sku: string;
+  soldQty: number;
+  revenue: string;
+}
+
 export interface DashboardQueryParams {
   warehouseId?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
+  timeframe?: string | undefined;
 }
+

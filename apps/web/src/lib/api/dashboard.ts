@@ -5,6 +5,8 @@ import type {
   StockStatusOverviewDto,
   RecentActivityDto,
   DashboardQueryParams,
+  SalesOverviewPointDto,
+  TopSellingProductDto,
 } from '@repo/types';
 
 function buildQueryString(params: Record<string, unknown>): string {
@@ -35,4 +37,14 @@ export const dashboardApi = {
     ),
 
   getRecentActivities: () => apiClient<RecentActivityDto[]>('/dashboard/recent-activities'),
+
+  getSalesOverview: (params?: DashboardQueryParams) =>
+    apiClient<SalesOverviewPointDto[]>(
+      `/dashboard/sales-overview${buildQueryString((params ?? {}) as Record<string, unknown>)}`,
+    ),
+
+  getTopSellingProducts: (params?: DashboardQueryParams) =>
+    apiClient<TopSellingProductDto[]>(
+      `/dashboard/top-selling-products${buildQueryString((params ?? {}) as Record<string, unknown>)}`,
+    ),
 };

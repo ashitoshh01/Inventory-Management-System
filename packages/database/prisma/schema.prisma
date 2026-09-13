@@ -25,6 +25,10 @@ model User {
   shippedStockTransfers     StockTransfer[]          @relation("StockTransferShipper")
   receivedStockTransfers    StockTransfer[]          @relation("StockTransferReceiver")
   cancelledStockTransfers   StockTransfer[]          @relation("StockTransferCanceller")
+  createdSalesOrders        SalesOrder[]             @relation("SalesOrderCreator")
+  approvedSalesOrders       SalesOrder[]             @relation("SalesOrderApprover")
+  fulfilledSalesOrders      SalesOrder[]             @relation("SalesOrderFulfiller")
+  cancelledSalesOrders      SalesOrder[]             @relation("SalesOrderCanceller")
 }
 
 model Organization {
@@ -47,6 +51,9 @@ model Organization {
   goodsReceiptLines  GoodsReceiptLine[]
   stockTransfers     StockTransfer[]
   stockTransferLines StockTransferLine[]
+  customers          Customer[]
+  salesOrders        SalesOrder[]
+  salesOrderLines    SalesOrderLine[]
 }
 
 model Role {
@@ -172,6 +179,7 @@ model Product {
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceiptLines  GoodsReceiptLine[]
   stockTransferLines StockTransferLine[]
+  salesOrderLines    SalesOrderLine[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, sku])
@@ -209,6 +217,7 @@ model Warehouse {
   goodsReceipts      GoodsReceipt[]
   outgoingTransfers  StockTransfer[]    @relation("TransferSourceWarehouse")
   incomingTransfers  StockTransfer[]    @relation("TransferDestinationWarehouse")
+  salesOrders        SalesOrder[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, name])
@@ -469,6 +478,112 @@ model StockTransferLine {
   @@unique([organizationId, transferId, productId])
   @@index([organizationId])
   @@index([organizationId, transferId])
+  @@index([organizationId, productId])
+  @@index([organizationId, createdAt])
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Customer {
+  id             String         @id @default(uuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  status         CustomerStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesOrders    SalesOrder[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, name])
+  @@index([organizationId, createdAt])
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  FULFILLED
+  CANCELLED
+}
+
+model SalesOrder {
+  id                     String           @id @default(uuid())
+  organizationId         String
+  salesOrderNumber       String
+  idempotencyKey         String?
+  idempotencyPayloadHash String?
+  customerId             String?
+  customerName           String
+  customerEmail          String?
+  status                 SalesOrderStatus @default(DRAFT)
+  orderDate              DateTime         @default(now())
+  expectedDate           DateTime?
+  warehouseId            String
+  currency               String           @default("INR")
+  subtotal               Decimal          @db.Decimal(14, 4)
+  taxTotal               Decimal          @default(0) @db.Decimal(14, 4)
+  grandTotal             Decimal          @db.Decimal(14, 4)
+  notes                  String?
+  createdById            String?
+  approvedById           String?
+  approvedAt             DateTime?
+  fulfilledById          String?
+  fulfilledAt            DateTime?
+  cancelledById          String?
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse        @relation(fields: [organizationId, warehouseId], references: [organizationId, id], onDelete: Restrict)
+  customer     Customer?        @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
+  creator      User?            @relation("SalesOrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approver     User?            @relation("SalesOrderApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  fulfiller    User?            @relation("SalesOrderFulfiller", fields: [fulfilledById], references: [id], onDelete: SetNull)
+  canceller    User?            @relation("SalesOrderCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  lines        SalesOrderLine[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, salesOrderNumber])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, warehouseId])
+  @@index([organizationId, customerId])
+  @@index([organizationId, orderDate])
+  @@index([organizationId, createdAt])
+}
+
+model SalesOrderLine {
+  id             String     @id @default(uuid())
+  organizationId String
+  salesOrderId   String
+  productId      String
+  quantity       Decimal    @db.Decimal(14, 4)
+  unitPrice      Decimal    @db.Decimal(14, 4)
+  lineTotal      Decimal    @db.Decimal(14, 4)
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesOrder   SalesOrder   @relation(fields: [organizationId, salesOrderId], references: [organizationId, id], onDelete: Cascade)
+  product      Product      @relation(fields: [organizationId, productId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([organizationId, salesOrderId])
   @@index([organizationId, productId])
   @@index([organizationId, createdAt])
 }

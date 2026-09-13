@@ -49,6 +49,20 @@ async function main(): Promise<void> {
       { action: 'stock-transfer.ship', description: 'Dispatch stock transfers' },
       { action: 'stock-transfer.receive', description: 'Receive stock transfers' },
       { action: 'stock-transfer.cancel', description: 'Cancel stock transfers' },
+      { action: 'customer.read', description: 'View customers' },
+      { action: 'customer.create', description: 'Create customers' },
+      { action: 'customer.update', description: 'Update customers' },
+      { action: 'customer.delete', description: 'Delete customers' },
+      { action: 'sales-order.read', description: 'View sales orders' },
+      { action: 'sales-order.create', description: 'Create sales orders' },
+      { action: 'sales-order.update', description: 'Update draft sales orders' },
+      { action: 'sales-order.delete', description: 'Delete draft sales orders' },
+      { action: 'sales-order.submit', description: 'Submit sales orders for approval' },
+      { action: 'sales-order.approve', description: 'Approve submitted sales orders' },
+      { action: 'sales-order.fulfill', description: 'Fulfill sales orders and deduct inventory' },
+      { action: 'sales-order.cancel', description: 'Cancel sales orders' },
+      { action: 'report.read', description: 'View business reports and analytics' },
+      { action: 'report.export', description: 'Export business reports to CSV' },
     ];
 
     for (const perm of corePermissions) {

@@ -10,18 +10,43 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { ChevronDown, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
+import { useSalesOverview } from '../../hooks/use-dashboard';
+import type { DashboardQueryParams } from '@repo/types';
 
 interface SalesOverviewChartProps {
+  queryParams?: DashboardQueryParams;
   className?: string;
+  currencySymbol?: string;
 }
 
-export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
-  const [timeframe] = React.useState('This Week');
+export function SalesOverviewChart({
+  queryParams,
+  className,
+  currencySymbol = '$',
+}: SalesOverviewChartProps) {
+  const { data: salesOverviewResponse, isLoading } = useSalesOverview(queryParams);
 
-  // In this system, sales orders/invoices are not yet modeled in the backend.
-  // We explicitly detect this and show a clean empty state rather than hardcoding fake numbers.
-  const salesData: Array<{ day: string; thisWeek: number; lastWeek: number }> = [];
+  const salesData = (salesOverviewResponse?.data || []).map((p) => ({
+    day: p.day,
+    thisWeek: p.thisPeriod,
+    lastWeek: p.lastPeriod,
+  }));
+
+  const hasData = salesData.some((p) => p.thisWeek > 0 || p.lastWeek > 0);
+
+  if (isLoading) {
+    return (
+      <div
+        className={`flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm ${
+          className || ''
+        }`}
+      >
+        <div className="h-6 w-36 animate-pulse rounded bg-slate-100" />
+        <div className="mt-6 h-64 w-full animate-pulse rounded-xl bg-slate-50" />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -36,32 +61,25 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
           <div className="mt-2 flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5 font-medium text-slate-600">
               <span className="h-2 w-2 rounded-full bg-blue-600" />
-              This Week
+              This Period
             </span>
             <span className="flex items-center gap-1.5 font-medium text-slate-400">
               <span className="h-2 w-2 rounded-full bg-slate-300" />
-              Last Week
+              Prior Period
             </span>
           </div>
         </div>
 
-        {/* Dropdown Selector */}
-        <div className="relative">
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <span>{timeframe}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-          </button>
+        <div className="rounded-lg bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
+          Weekly Trend
         </div>
       </div>
 
       {/* Chart or Empty State */}
       <div className="relative mt-6 h-64 w-full">
-        {salesData.length > 0 ? (
+        {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <LineChart data={salesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis
                 dataKey="day"
@@ -73,12 +91,15 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
-                tickFormatter={(v) => `$${v / 1000}K`}
+                tickFormatter={(v) => `${currencySymbol}${v}`}
               />
-              <Tooltip />
+              <Tooltip
+                formatter={(val: unknown) => [`${currencySymbol}${val}`, 'Revenue']}
+              />
               <Line
                 type="monotone"
                 dataKey="thisWeek"
+                name="This Period"
                 stroke="#2563eb"
                 strokeWidth={2.5}
                 dot={{ r: 4, fill: '#2563eb' }}
@@ -87,6 +108,7 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
               <Line
                 type="monotone"
                 dataKey="lastWeek"
+                name="Prior Period"
                 stroke="#cbd5e1"
                 strokeWidth={2}
                 strokeDasharray="4 4"
@@ -99,10 +121,9 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-3">
               <ShoppingBag className="h-6 w-6" />
             </div>
-            <h4 className="text-sm font-semibold text-slate-700">No Sales Data Available</h4>
+            <h4 className="text-sm font-semibold text-slate-700">No Sales Data In This Period</h4>
             <p className="mt-1 max-w-xs text-xs text-slate-400">
-              Sales transactions and POS modules are not yet registered. Connect sales channels to
-              see revenue trends.
+              Orders created and fulfilled in this time frame will display trend lines here.
             </p>
           </div>
         )}

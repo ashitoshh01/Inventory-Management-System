@@ -18,15 +18,52 @@ import { UpcomingExpiryTable } from '../components/dashboard/upcoming-expiry-tab
 import { WarehouseSelector } from '../components/dashboard/warehouse-selector';
 import { DateRangeSelector } from '../components/dashboard/date-range-selector';
 
+function getDateBounds(range: string): { startDate?: string; endDate?: string } {
+  const now = new Date();
+  const endDate = now.toISOString();
+
+  if (range === 'Today') {
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    return { startDate: today.toISOString(), endDate };
+  }
+  if (range === 'Last 7 Days') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    return { startDate: d.toISOString(), endDate };
+  }
+  if (range === 'Last 30 Days') {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 30);
+    return { startDate: d.toISOString(), endDate };
+  }
+  if (range === 'This Month') {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startDate: d.toISOString(), endDate };
+  }
+  if (range === 'Last Month') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    return { startDate: start.toISOString(), endDate: end.toISOString() };
+  }
+  return {};
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [selectedWarehouseId, setSelectedWarehouseId] = React.useState<string | undefined>();
+  const [selectedDateRange, setSelectedDateRange] = React.useState('Last 7 Days');
+
+  const dateBounds = React.useMemo(() => getDateBounds(selectedDateRange), [selectedDateRange]);
 
   const queryParams = React.useMemo(
     () => ({
       warehouseId: selectedWarehouseId,
+      startDate: dateBounds.startDate,
+      endDate: dateBounds.endDate,
+      timeframe: selectedDateRange,
     }),
-    [selectedWarehouseId],
+    [selectedWarehouseId, dateBounds, selectedDateRange],
   );
 
   const { data: statsResponse, isLoading: statsLoading } = useDashboardStats(queryParams);
@@ -40,7 +77,7 @@ export default function DashboardPage() {
         .split('@')[0]!
         .replace(/[._]/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase())
-    : 'John';
+    : 'User';
 
   return (
     <div className="space-y-6">
@@ -61,7 +98,10 @@ export default function DashboardPage() {
             onChange={setSelectedWarehouseId}
             allowAll
           />
-          <DateRangeSelector />
+          <DateRangeSelector
+            value={selectedDateRange}
+            onChange={setSelectedDateRange}
+          />
         </div>
       </div>
 
@@ -75,7 +115,7 @@ export default function DashboardPage() {
       {/* Middle Row: Sales Overview (Line), Category Donut, Recent Activities */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <SalesOverviewChart className="h-full" />
+          <SalesOverviewChart queryParams={queryParams} className="h-full" />
         </div>
         <div className="lg:col-span-4">
           <CategoryValueChart
@@ -97,7 +137,7 @@ export default function DashboardPage() {
       {/* Bottom Row: Top Selling Products, Stock Status Donut, Upcoming Expiry */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <TopSellingProducts className="h-full" />
+          <TopSellingProducts queryParams={queryParams} className="h-full" />
         </div>
         <div className="lg:col-span-4">
           <StockStatusChart
