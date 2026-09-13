@@ -27,10 +27,7 @@ export function UpcomingExpiryTable({ className }: UpcomingExpiryTableProps) {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-slate-800">Upcoming Expiry</h3>
-        <Link
-          href="/stock"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-        >
+        <Link href="/stock" className="text-xs font-semibold text-blue-600 hover:text-blue-700">
           View all
         </Link>
       </div>
@@ -62,8 +59,8 @@ export function UpcomingExpiryTable({ className }: UpcomingExpiryTableProps) {
                   item.daysLeft <= 7
                     ? 'text-rose-600 font-bold'
                     : item.daysLeft <= 15
-                    ? 'text-amber-600 font-semibold'
-                    : 'text-emerald-600 font-medium';
+                      ? 'text-amber-600 font-semibold'
+                      : 'text-emerald-600 font-medium';
 
                 return (
                   <tr key={item.id}>
@@ -72,16 +69,12 @@ export function UpcomingExpiryTable({ className }: UpcomingExpiryTableProps) {
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
                           <Package className="h-4 w-4 text-slate-400" />
                         </div>
-                        <span className="font-semibold text-slate-800">
-                          {item.productName}
-                        </span>
+                        <span className="font-semibold text-slate-800">{item.productName}</span>
                       </div>
                     </td>
                     <td className="py-2.5 text-slate-500">{item.batchNo}</td>
                     <td className="py-2.5 text-slate-600">{item.expiryDate}</td>
-                    <td className={`py-2.5 text-right ${badgeColor}`}>
-                      {item.daysLeft}
-                    </td>
+                    <td className={`py-2.5 text-right ${badgeColor}`}>{item.daysLeft}</td>
                   </tr>
                 );
               })}

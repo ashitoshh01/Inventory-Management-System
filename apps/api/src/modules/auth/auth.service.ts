@@ -11,6 +11,7 @@ import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { UserDto, OrganizationDto } from '@repo/types';
 import { randomBytes, createHash } from 'crypto';
 import { AuditService } from '../audit/audit.service';
+import { ensureOwnerRoleWithPermissions } from '../core/helpers/rbac-bootstrap.helper';
 
 @Injectable()
 export class AuthService {
@@ -53,12 +54,7 @@ export class AuthService {
           },
         });
 
-        let ownerRole = await tx.role.findFirst({ where: { name: 'Owner' } });
-        if (!ownerRole) {
-          ownerRole = await tx.role.create({
-            data: { name: 'Owner', description: 'Organization Owner' },
-          });
-        }
+        const ownerRole = await ensureOwnerRoleWithPermissions(tx);
 
         const _membership = await tx.organizationMembership.create({
           data: {
@@ -291,8 +287,25 @@ export class AuthService {
           name: m.role.name,
           description: m.role.description,
         },
+        organization: {
+          id: m.organization.id,
+          name: m.organization.name,
+          slug: m.organization.slug,
+          isActive: m.organization.isActive,
+          createdAt: m.organization.createdAt.toISOString(),
+          updatedAt: m.organization.updatedAt.toISOString(),
+        },
       })),
-      activeOrganization: null, // Will be filled by client interceptor/headers or standard logic
+      activeOrganization: user.memberships[0]
+        ? {
+            id: user.memberships[0].organization.id,
+            name: user.memberships[0].organization.name,
+            slug: user.memberships[0].organization.slug,
+            isActive: user.memberships[0].organization.isActive,
+            createdAt: user.memberships[0].organization.createdAt.toISOString(),
+            updatedAt: user.memberships[0].organization.updatedAt.toISOString(),
+          }
+        : null,
     };
   }
 }

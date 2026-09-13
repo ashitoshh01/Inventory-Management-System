@@ -11,11 +11,7 @@ interface StockStatusChartProps {
   className?: string | undefined;
 }
 
-export function StockStatusChart({
-  data,
-  isLoading = false,
-  className,
-}: StockStatusChartProps) {
+export function StockStatusChart({ data, isLoading = false, className }: StockStatusChartProps) {
   if (isLoading) {
     return (
       <div
@@ -61,9 +57,7 @@ export function StockStatusChart({
       }`}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">
-          Stock Status Overview
-        </h3>
+        <h3 className="text-base font-bold text-slate-800">Stock Status Overview</h3>
       </div>
 
       {!hasData ? (
@@ -98,9 +92,7 @@ export function StockStatusChart({
             </ResponsiveContainer>
             {/* Center Total Count */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-xl font-bold text-slate-800">
-                {total.toLocaleString()}
-              </span>
+              <span className="text-xl font-bold text-slate-800">{total.toLocaleString()}</span>
               <span className="text-[11px] font-medium text-slate-400">Total Products</span>
             </div>
           </div>

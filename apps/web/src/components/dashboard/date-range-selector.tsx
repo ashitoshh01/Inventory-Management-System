@@ -9,19 +9,9 @@ interface DateRangeSelectorProps {
   onRangeChange?: (range: string) => void;
 }
 
-const RANGES = [
-  'Today',
-  'Last 7 Days',
-  'Last 30 Days',
-  'This Month',
-  'Last Month',
-  'Custom Range',
-];
+const RANGES = ['Today', 'Last 7 Days', 'Last 30 Days', 'This Month', 'Last Month', 'Custom Range'];
 
-export function DateRangeSelector({
-  className,
-  onRangeChange,
-}: DateRangeSelectorProps) {
+export function DateRangeSelector({ className, onRangeChange }: DateRangeSelectorProps) {
   const [selectedRange, setSelectedRange] = React.useState('Last 7 Days');
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -77,9 +67,7 @@ export function DateRangeSelector({
                 }}
                 className="flex w-full items-center justify-between px-3.5 py-2 text-xs text-left text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <span className={cn(isSelected && 'font-bold text-blue-600')}>
-                  {range}
-                </span>
+                <span className={cn(isSelected && 'font-bold text-blue-600')}>{range}</span>
                 {isSelected && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
               </button>
             );

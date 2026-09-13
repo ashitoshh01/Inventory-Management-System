@@ -463,12 +463,14 @@ export class ProductsService {
       sku: product.sku,
       description: product.description,
       unitOfMeasure: product.unitOfMeasure,
-      unitCost: product.unitCost !== null && product.unitCost !== undefined
-        ? product.unitCost.toString()
-        : null,
-      unitPrice: product.unitPrice !== null && product.unitPrice !== undefined
-        ? product.unitPrice.toString()
-        : null,
+      unitCost:
+        product.unitCost !== null && product.unitCost !== undefined
+          ? product.unitCost.toString()
+          : null,
+      unitPrice:
+        product.unitPrice !== null && product.unitPrice !== undefined
+          ? product.unitPrice.toString()
+          : null,
       status: product.status,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),

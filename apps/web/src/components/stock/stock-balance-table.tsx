@@ -15,7 +15,12 @@ import {
   Eye,
   Package,
 } from 'lucide-react';
-import type { StockBalanceDto, SortOrder, AllowedStockBalanceSortField, ProductDto } from '@repo/types';
+import type {
+  StockBalanceDto,
+  SortOrder,
+  AllowedStockBalanceSortField,
+  ProductDto,
+} from '@repo/types';
 import { useProducts } from '../../hooks/use-products';
 import { useWarehouses } from '../../hooks/use-warehouses';
 import { useCategories } from '../../hooks/use-categories';
@@ -197,9 +202,7 @@ export function StockBalanceTable({
 
   if (isError) {
     const msg =
-      error instanceof Error
-        ? error.message
-        : 'Failed to load stock balances. Please try again.';
+      error instanceof Error ? error.message : 'Failed to load stock balances. Please try again.';
 
     return (
       <div className="m-6 flex flex-col items-center justify-center rounded-2xl border border-rose-100 bg-rose-50/50 p-8 text-center">
@@ -310,12 +313,9 @@ export function StockBalanceTable({
           {balances.map((b) => {
             const product = productsMap.get(b.productId);
             const warehouse = warehousesMap.get(b.warehouseId);
-            const categoryInfo = product?.categoryId
-              ? categoriesMap.get(product.categoryId)
-              : null;
+            const categoryInfo = product?.categoryId ? categoriesMap.get(product.categoryId) : null;
 
             const qtyNum = parseFloat(b.quantity) || 0;
-            const isOutOfStock = qtyNum <= 0;
             const isLowStock = qtyNum > 0 && qtyNum <= 10;
             const isInStock = qtyNum > 10;
 
@@ -334,10 +334,7 @@ export function StockBalanceTable({
             const isMenuOpen = activeMenuId === b.id;
 
             return (
-              <tr
-                key={b.id}
-                className="transition-colors hover:bg-slate-50/80"
-              >
+              <tr key={b.id} className="transition-colors hover:bg-slate-50/80">
                 {/* 1. Product (Image thumbnail + Title + Description) */}
                 <td className="py-3 pl-4 pr-3">
                   <div className="flex items-center gap-3">
@@ -360,9 +357,7 @@ export function StockBalanceTable({
 
                 {/* 2. SKU / Barcode */}
                 <td className="px-3 py-3">
-                  <div className="font-semibold text-slate-800">
-                    SKU: {product?.sku || '—'}
-                  </div>
+                  <div className="font-semibold text-slate-800">SKU: {product?.sku || '—'}</div>
                   <div className="text-[11px] text-slate-400">
                     {product?.id ? product.id.slice(0, 12) : '—'}
                   </div>
@@ -382,9 +377,7 @@ export function StockBalanceTable({
 
                 {/* 4. Warehouse */}
                 <td className="px-3 py-3">
-                  <div className="font-medium text-slate-800">
-                    {warehouse?.name || 'Warehouse'}
-                  </div>
+                  <div className="font-medium text-slate-800">{warehouse?.name || 'Warehouse'}</div>
                   <div className="text-[11px] text-slate-400 font-mono">
                     {warehouse?.code || 'WH-01'}
                   </div>
@@ -411,9 +404,7 @@ export function StockBalanceTable({
                 </td>
 
                 {/* 7. Reserved */}
-                <td className="px-3 py-3 text-center font-medium text-amber-600">
-                  {reservedQty}
-                </td>
+                <td className="px-3 py-3 text-center font-medium text-amber-600">{reservedQty}</td>
 
                 {/* 8. Status */}
                 <td className="px-3 py-3">
@@ -434,16 +425,12 @@ export function StockBalanceTable({
 
                 {/* 9. Unit Cost */}
                 <td className="px-3 py-3 text-right font-medium text-slate-700">
-                  {unitCost !== null
-                    ? `${currencySymbol}${unitCost.toFixed(2)}`
-                    : '—'}
+                  {unitCost !== null ? `${currencySymbol}${unitCost.toFixed(2)}` : '—'}
                 </td>
 
                 {/* 10. Unit Price */}
                 <td className="px-3 py-3 text-right font-medium text-slate-700">
-                  {unitPrice !== null
-                    ? `${currencySymbol}${unitPrice.toFixed(2)}`
-                    : '—'}
+                  {unitPrice !== null ? `${currencySymbol}${unitPrice.toFixed(2)}` : '—'}
                 </td>
 
                 {/* 11. Total Value */}

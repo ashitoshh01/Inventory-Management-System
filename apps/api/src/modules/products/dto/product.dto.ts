@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsUUID, IsIn, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  IsOptional,
+  IsUUID,
+  IsIn,
+  Matches,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import {
   UnitOfMeasure,

@@ -29,10 +29,7 @@ export class DashboardController {
 
   @Get('stats')
   @RequirePermissions('stock.read')
-  async getStats(
-    @CurrentOrganization() org: Organization,
-    @Query() query: DashboardQueryDto,
-  ) {
+  async getStats(@CurrentOrganization() org: Organization, @Query() query: DashboardQueryDto) {
     return this.dashboardService.getStats(org.id, query);
   }
 
@@ -56,9 +53,7 @@ export class DashboardController {
 
   @Get('recent-activities')
   @RequirePermissions('stock.read')
-  async getRecentActivities(
-    @CurrentOrganization() org: Organization,
-  ) {
+  async getRecentActivities(@CurrentOrganization() org: Organization) {
     return this.dashboardService.getRecentActivities(org.id);
   }
 }

@@ -106,7 +106,8 @@ export class DashboardService {
       categoryId: r.category_id,
       categoryName: r.category_name,
       totalValue: r.total_value,
-      percentage: totalValue > 0 ? Math.round((parseFloat(r.total_value) / totalValue) * 1000) / 10 : 0,
+      percentage:
+        totalValue > 0 ? Math.round((parseFloat(r.total_value) / totalValue) * 1000) / 10 : 0,
       productCount: parseInt(r.product_count, 10),
     }));
   }
@@ -118,9 +119,7 @@ export class DashboardService {
     organizationId: string,
     params?: DashboardQueryParams,
   ): Promise<StockStatusOverviewDto> {
-    const warehouseFilter = params?.warehouseId
-      ? { warehouseId: params.warehouseId }
-      : {};
+    const warehouseFilter = params?.warehouseId ? { warehouseId: params.warehouseId } : {};
 
     // Get all product IDs with stock balances
     const balances = await this.prisma.stockBalance.groupBy({
@@ -167,10 +166,7 @@ export class DashboardService {
   /**
    * Recent audit activities enriched with descriptions.
    */
-  async getRecentActivities(
-    organizationId: string,
-    limit = 10,
-  ): Promise<RecentActivityDto[]> {
+  async getRecentActivities(organizationId: string, limit = 10): Promise<RecentActivityDto[]> {
     const events = await this.prisma.auditEvent.findMany({
       where: { organizationId },
       orderBy: { createdAt: 'desc' },
@@ -188,12 +184,13 @@ export class DashboardService {
 
     // Batch-fetch actor emails
     const actorIds = [...new Set(events.map((e) => e.actorUserId).filter(Boolean))] as string[];
-    const actors = actorIds.length > 0
-      ? await this.prisma.user.findMany({
-          where: { id: { in: actorIds } },
-          select: { id: true, email: true },
-        })
-      : [];
+    const actors =
+      actorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: actorIds } },
+            select: { id: true, email: true },
+          })
+        : [];
     const actorMap = new Map(actors.map((a) => [a.id, a.email]));
 
     return events.map((e) => ({
@@ -201,9 +198,13 @@ export class DashboardService {
       action: e.action,
       entityType: e.entityType,
       entityId: e.entityId,
-      description: this.describeAction(e.action, e.entityType, e.metadata as Record<string, unknown> | null),
+      description: this.describeAction(
+        e.action,
+        e.entityType,
+        e.metadata as Record<string, unknown> | null,
+      ),
       timestamp: e.createdAt.toISOString(),
-      actorEmail: e.actorUserId ? actorMap.get(e.actorUserId) ?? null : null,
+      actorEmail: e.actorUserId ? (actorMap.get(e.actorUserId) ?? null) : null,
     }));
   }
 

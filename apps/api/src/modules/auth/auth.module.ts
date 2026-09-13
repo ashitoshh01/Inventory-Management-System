@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuditModule } from '../audit/audit.module';
 
+import { AuthRateLimitGuard } from '../../common/guards/auth-rate-limit.guard';
+
 @Module({
   imports: [
     AuditModule,
@@ -13,7 +15,7 @@ import { AuditModule } from '../audit/audit.module';
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, AuthRateLimitGuard],
   controllers: [AuthController],
   exports: [AuthService],
 })

@@ -34,6 +34,5 @@ export const dashboardApi = {
       `/dashboard/stock-status${buildQueryString((params ?? {}) as Record<string, unknown>)}`,
     ),
 
-  getRecentActivities: () =>
-    apiClient<RecentActivityDto[]>('/dashboard/recent-activities'),
+  getRecentActivities: () => apiClient<RecentActivityDto[]>('/dashboard/recent-activities'),
 };

@@ -39,17 +39,14 @@ export function CategoryValueChart({
     );
   }
 
-  const totalValue = data.reduce(
-    (acc, curr) => acc + (parseFloat(curr.totalValue) || 0),
-    0,
-  );
+  const totalValue = data.reduce((acc, curr) => acc + (parseFloat(curr.totalValue) || 0), 0);
 
   const formattedTotal =
     totalValue >= 1_000_000
       ? `${currencySymbol}${(totalValue / 1_000_000).toFixed(2)}M`
       : totalValue >= 1_000
-      ? `${currencySymbol}${(totalValue / 1_000).toFixed(1)}K`
-      : `${currencySymbol}${totalValue.toFixed(0)}`;
+        ? `${currencySymbol}${(totalValue / 1_000).toFixed(1)}K`
+        : `${currencySymbol}${totalValue.toFixed(0)}`;
 
   const chartData = data.map((cat, idx) => ({
     name: cat.categoryName,
@@ -67,9 +64,7 @@ export function CategoryValueChart({
       }`}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">
-          Inventory Value by Category
-        </h3>
+        <h3 className="text-base font-bold text-slate-800">Inventory Value by Category</h3>
       </div>
 
       {!hasData ? (
@@ -137,9 +132,7 @@ export function CategoryValueChart({
                     {currencySymbol}
                     {cat.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
-                  <span className="text-[11px] text-slate-400">
-                    ({cat.percentage.toFixed(1)}%)
-                  </span>
+                  <span className="text-[11px] text-slate-400">({cat.percentage.toFixed(1)}%)</span>
                 </div>
               </div>
             ))}

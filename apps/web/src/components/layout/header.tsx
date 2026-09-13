@@ -2,17 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Menu,
-  Search,
-  Bell,
-  HelpCircle,
-  LogOut,
-  User,
-  Settings,
-  ChevronDown,
-  Building,
-} from 'lucide-react';
+import { Menu, Search, Bell, LogOut, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@repo/ui';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -23,14 +13,17 @@ interface HeaderProps {
   onSearchChange?: (val: string) => void;
 }
 
-export function Header({
-  className,
-  onMenuClick,
-  searchValue,
-  onSearchChange,
-}: HeaderProps) {
+export function Header({ className, onMenuClick, searchValue, onSearchChange }: HeaderProps) {
   const router = useRouter();
-  const { user, memberships, activeOrganizationId, setActiveOrganizationId, logout } = useAuth();
+  const {
+    user,
+    memberships,
+    activeOrganizationId,
+    activeOrganization,
+    activeMembership,
+    setActiveOrganizationId,
+    logout,
+  } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
 
@@ -45,14 +38,13 @@ export function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const activeMembership = memberships?.find(
-    (m) => m.organizationId === activeOrganizationId,
-  ) || memberships?.[0];
-
-  const roleName = activeMembership?.role?.name || 'Admin';
+  const roleName = activeMembership?.role?.name || 'Member';
   const displayName = user?.email
-    ? user.email.split('@')[0]!.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-    : 'John Doe';
+    ? user.email
+        .split('@')[0]!
+        .replace(/[._]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : 'Authenticated User';
   const initial = displayName.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
@@ -97,8 +89,16 @@ export function Header({
         </div>
       </div>
 
-      {/* Right: Notifications, Help, Profile */}
+      {/* Right: Organization, Notifications, Profile */}
       <div className="flex items-center gap-3 sm:gap-4">
+        {/* Active Organization Pill */}
+        {activeOrganization && (
+          <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm">
+            <Building className="h-3.5 w-3.5 text-blue-600" />
+            <span className="max-w-[140px] truncate">{activeOrganization.name}</span>
+          </div>
+        )}
+
         {/* Notification Bell */}
         <button
           type="button"
@@ -106,18 +106,6 @@ export function Header({
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
-            3
-          </span>
-        </button>
-
-        {/* Help Circle */}
-        <button
-          type="button"
-          className="hidden rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors sm:block"
-          aria-label="Help"
-        >
-          <HelpCircle className="h-5 w-5" />
         </button>
 
         <div className="hidden h-6 w-px bg-slate-200 sm:block" />
@@ -129,7 +117,7 @@ export function Header({
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-slate-50"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 font-semibold text-white shadow-sm ring-1 ring-white">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 font-semibold text-white shadow-sm ring-1 ring-white">
               {initial}
             </div>
             <div className="hidden text-left lg:block">
@@ -144,18 +132,21 @@ export function Header({
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl border border-slate-100 bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+            <div className="absolute right-0 mt-2 w-60 origin-top-right rounded-xl border border-slate-100 bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
               <div className="border-b border-slate-100 px-4 py-3">
                 <p className="text-xs font-medium text-slate-400">Signed in as</p>
                 <p className="truncate text-sm font-semibold text-slate-800">
-                  {user?.email || 'admin@example.com'}
+                  {user?.email || '—'}
                 </p>
+                {activeOrganization && (
+                  <p className="mt-1 truncate text-xs text-slate-500">{activeOrganization.name}</p>
+                )}
               </div>
 
               {memberships && memberships.length > 1 && (
                 <div className="border-b border-slate-100 py-1">
                   <div className="px-4 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Organizations
+                    Switch Organization
                   </div>
                   {memberships.map((m) => (
                     <button
@@ -172,25 +163,13 @@ export function Header({
                       )}
                     >
                       <Building className="h-3.5 w-3.5" />
-                      <span className="truncate">Org: {m.organizationId.slice(0, 8)}...</span>
+                      <span className="truncate">
+                        {m.organization?.name || `Org: ${m.organizationId.slice(0, 8)}...`}
+                      </span>
                     </button>
                   ))}
                 </div>
               )}
-
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowProfileMenu(false);
-                    router.push('/settings');
-                  }}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                >
-                  <Settings className="h-4 w-4 text-slate-400" />
-                  Settings
-                </button>
-              </div>
 
               <div className="border-t border-slate-100 py-1">
                 <button

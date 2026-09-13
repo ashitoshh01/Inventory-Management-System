@@ -8,19 +8,9 @@ import {
   Package,
   Boxes,
   ShoppingCart,
-  CreditCard,
-  Monitor,
   ArrowLeftRight,
-  RotateCcw,
-  Truck,
-  Users,
-  BarChart3,
-  TrendingUp,
-  Bell,
-  UserCog,
-  Settings,
-  Plug,
-  FileText,
+  Building2,
+  Tags,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -41,49 +31,26 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, exact: true },
   { name: 'Products', href: '/products', icon: Package },
+  { name: 'Categories', href: '/categories', icon: Tags },
+  { name: 'Warehouses', href: '/warehouses', icon: Building2 },
   {
     name: 'Inventory',
     href: '/stock',
     icon: Boxes,
     children: [
       { name: 'Stock Overview', href: '/stock' },
-      { name: 'Stock Management', href: '/stock' },
       { name: 'Stock Movements', href: '/stock/ledger' },
-      { name: 'Stock Transfers', href: '/transfers' },
-      { name: 'Stock Adjustments', href: '/stock' },
-      { name: 'Stock Count', href: '/stock' },
     ],
   },
   {
     name: 'Purchasing',
     href: '/purchase-orders',
     icon: ShoppingCart,
-    children: [
-      { name: 'Purchase Orders', href: '/purchase-orders' },
-    ],
   },
-  { name: 'Sales', href: '/sales', icon: CreditCard },
-  { name: 'POS', href: '/pos', icon: Monitor },
   { name: 'Transfers', href: '/transfers', icon: ArrowLeftRight },
-  { name: 'Returns', href: '/returns', icon: RotateCcw },
-  { name: 'Suppliers', href: '/suppliers', icon: Truck },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Forecasting', href: '/forecasting', icon: TrendingUp },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Users & Roles', href: '/users', icon: UserCog },
-  { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Integrations', href: '/integrations', icon: Plug },
-  { name: 'Audit Logs', href: '/audit-logs', icon: FileText },
 ];
 
-function NavItemComponent({
-  item,
-  isCollapsed,
-}: {
-  item: NavItem;
-  isCollapsed: boolean;
-}) {
+function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: boolean }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
   const hasChildren = item.children && item.children.length > 0;
@@ -94,8 +61,7 @@ function NavItemComponent({
 
   const isChildActive = hasChildren
     ? item.children!.some(
-        (child) =>
-          pathname === child.href || pathname.startsWith(`${child.href}/`),
+        (child) => pathname === child.href || pathname.startsWith(`${child.href}/`),
       )
     : false;
 
@@ -113,26 +79,19 @@ function NavItemComponent({
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-            active
-              ? 'bg-white/10 text-white'
-              : 'text-slate-300 hover:bg-white/5 hover:text-white',
+            active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white',
           )}
         >
           <item.icon className="h-[18px] w-[18px] shrink-0" />
           <span className="flex-1 text-left">{item.name}</span>
           <ChevronDown
-            className={cn(
-              'h-4 w-4 transition-transform duration-200',
-              isOpen && 'rotate-180',
-            )}
+            className={cn('h-4 w-4 transition-transform duration-200', isOpen && 'rotate-180')}
           />
         </button>
         {isOpen && (
           <div className="mt-1 ml-4 space-y-0.5 border-l border-white/10 pl-4">
             {item.children!.map((child) => {
-              const childActive =
-                pathname === child.href ||
-                pathname.startsWith(`${child.href}/`);
+              const childActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
               return (
                 <Link
                   key={child.name}
@@ -193,10 +152,7 @@ export function Sidebar({
     <>
       {/* Mobile overlay */}
       {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 lg:hidden"
-          onClick={onMobileClose}
-        />
+        <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={onMobileClose} />
       )}
 
       {/* Sidebar */}
@@ -218,9 +174,7 @@ export function Sidebar({
           {!isCollapsed && (
             <div className="min-w-0">
               <h1 className="truncate text-[15px] font-bold text-white">IMS</h1>
-              <p className="truncate text-[11px] text-slate-400">
-                Inventory Management
-              </p>
+              <p className="truncate text-[11px] text-slate-400">Inventory Management</p>
             </div>
           )}
           {/* Mobile close button */}
@@ -236,11 +190,7 @@ export function Sidebar({
         <nav className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
           <div className="space-y-1">
             {navigation.map((item) => (
-              <NavItemComponent
-                key={item.name}
-                item={item}
-                isCollapsed={isCollapsed}
-              />
+              <NavItemComponent key={item.name} item={item} isCollapsed={isCollapsed} />
             ))}
           </div>
         </nav>

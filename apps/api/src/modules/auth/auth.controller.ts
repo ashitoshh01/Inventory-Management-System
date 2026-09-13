@@ -15,12 +15,15 @@ import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { RegisterResponse, LoginResponse, AuthMeResponse } from '@repo/types';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthRateLimitGuard, RateLimit } from '../../common/guards/auth-rate-limit.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ limit: 5, windowSeconds: 60, keyPrefix: 'register' })
   async register(@Body() dto: RegisterDto): Promise<RegisterResponse> {
     const result = await this.authService.register(dto);
     return result;
@@ -28,6 +31,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ limit: 10, windowSeconds: 60, keyPrefix: 'login' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -54,6 +59,8 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({ limit: 20, windowSeconds: 60, keyPrefix: 'refresh' })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.['refreshToken'];
     const result = await this.authService.refreshSession(token);

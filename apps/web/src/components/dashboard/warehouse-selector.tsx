@@ -38,8 +38,8 @@ export function WarehouseSelector({
   const label = selectedWarehouse
     ? selectedWarehouse.name
     : allowAll
-    ? 'All Warehouses'
-    : 'Select Warehouse';
+      ? 'All Warehouses'
+      : 'Select Warehouse';
 
   return (
     <div className={cn('relative', className)} ref={containerRef}>
@@ -65,9 +65,7 @@ export function WarehouseSelector({
               }}
               className="flex w-full items-center justify-between px-3.5 py-2 text-xs text-left text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <span className={cn(!value && 'font-bold text-blue-600')}>
-                All Warehouses
-              </span>
+              <span className={cn(!value && 'font-bold text-blue-600')}>All Warehouses</span>
               {!value && <Check className="h-3.5 w-3.5 text-blue-600" />}
             </button>
           )}

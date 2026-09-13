@@ -1,5 +1,10 @@
 import { apiClient } from './client';
-import type { CategoryDto, CategoryQueryParams } from '@repo/types';
+import type {
+  CategoryDto,
+  CategoryQueryParams,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+} from '@repo/types';
 
 function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
@@ -17,4 +22,23 @@ export const categoriesApi = {
     apiClient<CategoryDto[]>(
       `/categories${buildQueryString((params ?? {}) as Record<string, unknown>)}`,
     ),
+
+  get: (id: string) => apiClient<CategoryDto>(`/categories/${id}`),
+
+  create: (data: CreateCategoryPayload) =>
+    apiClient<CategoryDto>('/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: UpdateCategoryPayload) =>
+    apiClient<CategoryDto>(`/categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    apiClient<{ success: boolean }>(`/categories/${id}`, {
+      method: 'DELETE',
+    }),
 };

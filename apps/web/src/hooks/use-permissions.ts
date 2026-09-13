@@ -1,6 +1,10 @@
 'use client';
 
 export interface PermissionsState {
+  canReadCategories: boolean;
+  canCreateCategory: boolean;
+  canUpdateCategory: boolean;
+  canDeleteCategory: boolean;
   canReadProducts: boolean;
   canCreateProduct: boolean;
   canUpdateProduct: boolean;
@@ -33,6 +37,10 @@ export interface PermissionsState {
 export function usePermissions(): PermissionsState {
   if (typeof window === 'undefined') {
     return {
+      canReadCategories: true,
+      canCreateCategory: true,
+      canUpdateCategory: true,
+      canDeleteCategory: true,
       canReadProducts: true,
       canCreateProduct: true,
       canUpdateProduct: true,
@@ -65,6 +73,10 @@ export function usePermissions(): PermissionsState {
 
   const stored = localStorage.getItem('user_permissions');
   let permissions: string[] = [
+    'category.read',
+    'category.create',
+    'category.update',
+    'category.delete',
     'product.read',
     'product.create',
     'product.update',
@@ -103,6 +115,10 @@ export function usePermissions(): PermissionsState {
   const hasPermission = (permission: string) => permissions.includes(permission);
 
   return {
+    canReadCategories: hasPermission('category.read'),
+    canCreateCategory: hasPermission('category.create'),
+    canUpdateCategory: hasPermission('category.update'),
+    canDeleteCategory: hasPermission('category.delete'),
     canReadProducts: hasPermission('product.read'),
     canCreateProduct: hasPermission('product.create'),
     canUpdateProduct: hasPermission('product.update'),

@@ -2,16 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  FileText,
-  Truck,
-  AlertTriangle,
-  Package,
-  Boxes,
-  User,
-  ArrowLeftRight,
-  Clock,
-} from 'lucide-react';
+import { AlertTriangle, Package, Boxes, User, ArrowLeftRight, Clock } from 'lucide-react';
 import type { RecentActivityDto } from '@repo/types';
 
 interface RecentActivitiesProps {
@@ -114,7 +105,9 @@ export function RecentActivities({
             return (
               <div key={act.id} className="flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg}`}>
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg}`}
+                  >
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">

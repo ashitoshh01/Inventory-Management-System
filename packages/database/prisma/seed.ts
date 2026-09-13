@@ -59,6 +59,32 @@ async function main(): Promise<void> {
       });
     }
     console.info(`[Seed] Seeded ${corePermissions.length} permissions successfully.`);
+
+    // Seed Owner role and map all permissions idempotently
+    let ownerRole = await prisma.role.findFirst({ where: { name: 'Owner' } });
+    if (!ownerRole) {
+      ownerRole = await prisma.role.create({
+        data: { name: 'Owner', description: 'Organization Owner' },
+      });
+    }
+
+    const allPermissions = await prisma.permission.findMany({ select: { id: true } });
+    for (const perm of allPermissions) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: ownerRole.id,
+            permissionId: perm.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: ownerRole.id,
+          permissionId: perm.id,
+        },
+      });
+    }
+    console.info(`[Seed] Mapped ${allPermissions.length} permissions to Owner role successfully.`);
   } catch (error) {
     console.error('[Seed] Database connectivity check failed during seed.');
     throw error;

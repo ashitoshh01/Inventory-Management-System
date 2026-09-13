@@ -25,6 +25,7 @@ export interface OrganizationMembershipDto {
   id: string;
   userId: string;
   organizationId: string;
+  organization?: OrganizationDto;
   role: RoleDto;
   isActive: boolean;
   createdAt: string;

@@ -30,12 +30,16 @@ export default function DashboardPage() {
   );
 
   const { data: statsResponse, isLoading: statsLoading } = useDashboardStats(queryParams);
-  const { data: categoryResponse, isLoading: categoryLoading } = useInventoryByCategory(queryParams);
+  const { data: categoryResponse, isLoading: categoryLoading } =
+    useInventoryByCategory(queryParams);
   const { data: stockStatusResponse, isLoading: stockStatusLoading } = useStockStatus(queryParams);
   const { data: recentActivitiesResponse, isLoading: activitiesLoading } = useRecentActivities();
 
   const userName = user?.email
-    ? user.email.split('@')[0]!.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    ? user.email
+        .split('@')[0]!
+        .replace(/[._]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
     : 'John';
 
   return (

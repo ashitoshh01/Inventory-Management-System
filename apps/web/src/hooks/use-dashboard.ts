@@ -19,8 +19,7 @@ export const dashboardKeys = {
     [...dashboardKeys.all(orgId), 'inventory-by-category', params] as const,
   stockStatus: (orgId?: string, params?: DashboardQueryParams) =>
     [...dashboardKeys.all(orgId), 'stock-status', params] as const,
-  recentActivities: (orgId?: string) =>
-    [...dashboardKeys.all(orgId), 'recent-activities'] as const,
+  recentActivities: (orgId?: string) => [...dashboardKeys.all(orgId), 'recent-activities'] as const,
 };
 
 export function useDashboardStats(params?: DashboardQueryParams, orgId?: string) {

@@ -27,10 +27,7 @@ export function TopSellingProducts({ className }: TopSellingProductsProps) {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-slate-800">Top Selling Products</h3>
-        <Link
-          href="/products"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-        >
+        <Link href="/products" className="text-xs font-semibold text-blue-600 hover:text-blue-700">
           View all
         </Link>
       </div>
@@ -69,12 +66,8 @@ export function TopSellingProducts({ className }: TopSellingProductsProps) {
                       </div>
                     </div>
                   </td>
-                  <td className="py-2.5 text-center font-semibold text-slate-700">
-                    {p.soldQty}
-                  </td>
-                  <td className="py-2.5 text-right font-semibold text-slate-800">
-                    {p.revenue}
-                  </td>
+                  <td className="py-2.5 text-center font-semibold text-slate-700">{p.soldQty}</td>
+                  <td className="py-2.5 text-right font-semibold text-slate-800">{p.revenue}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,13 +1,21 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { AuthMeResponse, LoginDto, RegisterDto } from '@repo/types';
+import {
+  AuthMeResponse,
+  LoginDto,
+  RegisterDto,
+  OrganizationDto,
+  OrganizationMembershipDto,
+} from '@repo/types';
 import { authApi } from '../../lib/api/auth';
 
 interface AuthContextType {
   user: AuthMeResponse['user'] | null;
   memberships: AuthMeResponse['memberships'] | null;
   activeOrganizationId: string | null;
+  activeOrganization: OrganizationDto | null;
+  activeMembership: OrganizationMembershipDto | null;
   isLoading: boolean;
   login: (data: LoginDto) => Promise<void>;
   register: (data: RegisterDto) => Promise<void>;
@@ -63,8 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (data: RegisterDto) => {
     await authApi.register(data);
-    // After registration, usually you'd log the user in immediately, but our login route sets the cookie.
-    // In our backend, register does NOT set the cookie. We need to login right after.
     await authApi.login({ email: data.email, password: data.password });
     await fetchUser();
   };
@@ -85,12 +91,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('activeOrganizationId', id);
   };
 
+  const activeMembership =
+    memberships?.find((m) => m.organizationId === activeOrganizationId) || memberships?.[0] || null;
+
+  const activeOrganization = activeMembership?.organization || null;
+
   return (
     <AuthContext.Provider
       value={{
         user,
         memberships,
         activeOrganizationId,
+        activeOrganization,
+        activeMembership,
         isLoading,
         login,
         register,

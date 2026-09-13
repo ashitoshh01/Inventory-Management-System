@@ -1,0 +1,89 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: inventory_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/inventory_test
+      REDIS_URL: redis://localhost:6379
+      AUTH_SECRET: ci-secret-key-that-is-at-least-32-chars-long!
+      COOKIE_SECURE: false
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify code formatting
+        run: pnpm format:check
+
+      - name: Lint codebase
+        run: pnpm lint
+
+      - name: Typecheck codebase
+        run: pnpm typecheck
+
+      - name: Deploy Prisma database migrations
+        run: pnpm --filter @repo/database prisma:migrate:deploy
+
+      - name: Seed test database
+        run: pnpm --filter @repo/database prisma:seed
+
+      - name: Run all unit and integration test suites
+        run: pnpm test
+
+      - name: Build applications and packages
+        run: pnpm build

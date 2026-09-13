@@ -34,6 +34,10 @@ export interface ApiErrorResponse {
   error: ApiErrorPayload;
 }
 
+export interface ApiClientOptions extends RequestInit {
+  _isRetry?: boolean;
+}
+
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -41,9 +45,46 @@ const getBaseUrl = () => {
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 };
 
+// Global in-flight refresh promise to deduplicate concurrent refresh calls
+let refreshPromise: Promise<boolean> | null = null;
+
+export const executeRefresh = async (): Promise<boolean> => {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const url = `${getBaseUrl()}/auth/refresh`;
+      const requestId = crypto.randomUUID();
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-request-id': requestId,
+        },
+        credentials: 'include',
+      });
+
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+};
+
+// Reset refresh state (for testing)
+export const _resetRefreshState = () => {
+  refreshPromise = null;
+};
+
 export const apiClient = async <T>(
   endpoint: string,
-  options?: RequestInit,
+  options?: ApiClientOptions,
 ): Promise<ApiResponse<T>> => {
   const url = `${getBaseUrl()}${endpoint}`;
 
@@ -77,6 +118,32 @@ export const apiClient = async <T>(
       message: 'An unknown error occurred while communicating with the server.',
       requestId,
     });
+  }
+
+  // Handle 401 Unauthorized for token refresh
+  const isAuthEndpoint =
+    endpoint.startsWith('/auth/login') ||
+    endpoint.startsWith('/auth/refresh') ||
+    endpoint.startsWith('/auth/register');
+
+  if (response.status === 401 && !options?._isRetry && !isAuthEndpoint) {
+    const refreshSuccess = await executeRefresh();
+
+    if (refreshSuccess) {
+      // Retry original request once with _isRetry = true to prevent loops
+      return apiClient<T>(endpoint, {
+        ...options,
+        _isRetry: true,
+      });
+    } else {
+      // Refresh failed: clear client state and redirect to login if in browser
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('activeOrganizationId');
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
+      }
+    }
   }
 
   if (!response.ok) {

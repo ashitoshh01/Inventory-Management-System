@@ -9,10 +9,7 @@ import { useDashboardStats } from '../../hooks/use-dashboard';
 import { usePermissions } from '../../hooks/use-permissions';
 import { useProducts } from '../../hooks/use-products';
 import { StockStatsCards } from '../../components/stock/stock-stats-cards';
-import {
-  StockTableToolbar,
-  type StockTab,
-} from '../../components/stock/stock-table-toolbar';
+import { StockTableToolbar, type StockTab } from '../../components/stock/stock-table-toolbar';
 import { StockBalanceTable } from '../../components/stock/stock-balance-table';
 import { StockTablePagination } from '../../components/stock/stock-table-pagination';
 import { StockMutationDialog } from '../../components/stock/stock-mutation-dialog';
@@ -244,11 +241,7 @@ function StockPageContent() {
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Warehouse Selector */}
-          <WarehouseSelector
-            value={warehouseId}
-            onChange={handleWarehouseChange}
-            allowAll
-          />
+          <WarehouseSelector value={warehouseId} onChange={handleWarehouseChange} allowAll />
 
           {/* Filters Button */}
           <button
@@ -274,11 +267,7 @@ function StockPageContent() {
       </div>
 
       {/* 2. 5 Summary Metric Cards */}
-      <StockStatsCards
-        stats={statsResponse?.data}
-        isLoading={statsLoading}
-        currencySymbol="$"
-      />
+      <StockStatsCards stats={statsResponse?.data} isLoading={statsLoading} currencySymbol="$" />
 
       {/* 3. Main White Card containing Tabs, Toolbar, Table, and Pagination */}
       <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">

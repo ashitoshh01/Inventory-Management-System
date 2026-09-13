@@ -1,15 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  DollarSign,
-  Package,
-  AlertTriangle,
-  AlertOctagon,
-  ShoppingCart,
-  TrendingUp,
-  Tag,
-} from 'lucide-react';
+import { Package, AlertTriangle, AlertOctagon, ShoppingCart, TrendingUp, Tag } from 'lucide-react';
 import type { DashboardStatsDto } from '@repo/types';
 
 interface DashboardStatsCardsProps {
@@ -36,9 +28,7 @@ export function DashboardStatsCards({
     );
   }
 
-  const inventoryValue = stats?.totalInventoryValue
-    ? parseFloat(stats.totalInventoryValue)
-    : 0;
+  const inventoryValue = stats?.totalInventoryValue ? parseFloat(stats.totalInventoryValue) : 0;
 
   const formattedInventoryValue = new Intl.NumberFormat('en-US', {
     style: 'currency',

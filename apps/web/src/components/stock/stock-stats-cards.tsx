@@ -28,9 +28,7 @@ export function StockStatsCards({
     );
   }
 
-  const inventoryValue = stats?.totalInventoryValue
-    ? parseFloat(stats.totalInventoryValue)
-    : 0;
+  const inventoryValue = stats?.totalInventoryValue ? parseFloat(stats.totalInventoryValue) : 0;
 
   const formattedInventoryValue = new Intl.NumberFormat('en-US', {
     style: 'currency',

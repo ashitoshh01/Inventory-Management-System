@@ -70,9 +70,7 @@ export function StockTableToolbar({
               onClick={() => onTabChange(tab.key)}
               className={cn(
                 'relative py-3 px-4 text-xs font-semibold transition-colors focus:outline-none',
-                isActive
-                  ? 'text-blue-600'
-                  : 'text-slate-500 hover:text-slate-800',
+                isActive ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800',
               )}
             >
               {tab.label}

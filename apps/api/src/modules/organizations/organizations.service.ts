@@ -14,6 +14,8 @@ import {
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 
+import { ensureOwnerRoleWithPermissions } from '../core/helpers/rbac-bootstrap.helper';
+
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -29,12 +31,7 @@ export class OrganizationsService {
         data: { name: dto.name, slug },
       });
 
-      let ownerRole = await tx.role.findFirst({ where: { name: 'Owner' } });
-      if (!ownerRole) {
-        ownerRole = await tx.role.create({
-          data: { name: 'Owner', description: 'Organization Owner' },
-        });
-      }
+      const ownerRole = await ensureOwnerRoleWithPermissions(tx);
 
       await tx.organizationMembership.create({
         data: {

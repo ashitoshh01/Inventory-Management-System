@@ -17,7 +17,7 @@ interface SalesOverviewChartProps {
 }
 
 export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
-  const [timeframe, setTimeframe] = React.useState('This Week');
+  const [timeframe] = React.useState('This Week');
 
   // In this system, sales orders/invoices are not yet modeled in the backend.
   // We explicitly detect this and show a clean empty state rather than hardcoding fake numbers.
@@ -63,7 +63,12 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#94a3b8', fontSize: 12 }}
+              />
               <YAxis
                 tickLine={false}
                 axisLine={false}
@@ -96,7 +101,8 @@ export function SalesOverviewChart({ className }: SalesOverviewChartProps) {
             </div>
             <h4 className="text-sm font-semibold text-slate-700">No Sales Data Available</h4>
             <p className="mt-1 max-w-xs text-xs text-slate-400">
-              Sales transactions and POS modules are not yet registered. Connect sales channels to see revenue trends.
+              Sales transactions and POS modules are not yet registered. Connect sales channels to
+              see revenue trends.
             </p>
           </div>
         )}

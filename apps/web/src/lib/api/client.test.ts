@@ -137,4 +137,139 @@ describe('API Client', () => {
     expect(result.data).toEqual({});
     expect(result.meta.requestId).toBeTruthy();
   });
+
+  it('7. Automatic token refresh on 401 - Should refresh and retry successfully', async () => {
+    // 1st call to /products returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Token expired', requestId: '1' },
+      }),
+    });
+
+    // 2nd call to /auth/refresh returns 200 OK
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { user: { id: 'u1' } } }),
+    });
+
+    // 3rd call retries /products and returns 200 OK
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [{ id: 'p1', name: 'Widget' }], meta: { requestId: '2' } }),
+    });
+
+    const result = await apiClient<{ id: string; name: string }[]>('/products');
+
+    expect(result.data).toEqual([{ id: 'p1', name: 'Widget' }]);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockFetch.mock.calls[0]![0]).toBe('http://test-api/api/v1/products');
+    expect(mockFetch.mock.calls[1]![0]).toBe('http://test-api/api/v1/auth/refresh');
+    expect(mockFetch.mock.calls[2]![0]).toBe('http://test-api/api/v1/products');
+  });
+
+  it('8. Failed refresh - Should not retry and throw error', async () => {
+    // 1st call to /products returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Token expired', requestId: '1' },
+      }),
+    });
+
+    // 2nd call to /auth/refresh fails (401)
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Session expired', requestId: '2' },
+      }),
+    });
+
+    await expect(apiClient('/products')).rejects.toThrow(ApiError);
+    // Should have called /products and /auth/refresh, but NOT retried /products
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('9. Concurrent 401 requests - Deduplicates to a single /auth/refresh call', async () => {
+    // Both endpoints return 401 initially
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Token expired', requestId: '1' },
+      }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Token expired', requestId: '2' },
+      }),
+    });
+
+    // Refresh succeeds
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { ok: true } }),
+    });
+
+    // Both retries succeed
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { item: 'A' }, meta: { requestId: '3' } }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { item: 'B' }, meta: { requestId: '4' } }),
+    });
+
+    const [resA, resB] = await Promise.all([apiClient('/endpointA'), apiClient('/endpointB')]);
+
+    expect(resA.data).toEqual({ item: 'A' });
+    expect(resB.data).toEqual({ item: 'B' });
+
+    // Exactly 1 call to /auth/refresh was made
+    const refreshCalls = mockFetch.mock.calls.filter((c) => c[0].includes('/auth/refresh'));
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  it('10. No infinite retry loop on persistent 401', async () => {
+    // 1st call returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Token expired', requestId: '1' },
+      }),
+    });
+
+    // Refresh succeeds
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { ok: true } }),
+    });
+
+    // Retry STILL returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({
+        error: { code: 'UNAUTHORIZED', message: 'Still unauthorized', requestId: '3' },
+      }),
+    });
+
+    await expect(apiClient('/products')).rejects.toThrow(ApiError);
+
+    // Total 3 calls: initial, refresh, single retry (no further calls)
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
 });

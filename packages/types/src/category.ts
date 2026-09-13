@@ -20,5 +20,5 @@ export interface UpdateCategoryPayload {
 }
 
 export interface CategoryQueryParams extends PaginationParams {
-  search?: string;
+  search?: string | undefined;
 }
