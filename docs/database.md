@@ -530,3 +530,32 @@ Implemented in `packages/database/prisma/schema.prisma` with migration `20260913
   - Composite FK to `Product`: `[organizationId, productId] -> Product[organizationId, id]` (`onDelete: Restrict`).
   - PostgreSQL Check Constraint: `StockTransferLine_quantity_positive`: `CHECK ("quantity" > 0)`.
   - Indexes on `[organizationId]`, `[organizationId, transferId]`, `[organizationId, productId]`.
+
+### ImportJob (Phase 10 — Imports & Bulk Operations)
+
+- **Purpose**: Authoritative tracking and auditing of bulk CSV imports for products and inventory stock mutations.
+- **Enums**:
+  - `ImportJobType`: `PRODUCT`, `STOCK`
+  - `ImportJobStatus`: `PENDING`, `VALIDATING`, `PROCESSING`, `COMPLETED`, `FAILED`, `PARTIALLY_COMPLETED`
+- **Fields**:
+  - `id`: UUID primary key (`@default(uuid())`)
+  - `organizationId`: String (FK referencing `Organization.id`, `onDelete: Cascade`)
+  - `userId`: String (FK referencing `User.id`, `onDelete: Cascade`)
+  - `type`: `ImportJobType`
+  - `status`: `ImportJobStatus` (default: `PENDING`)
+  - `fileName`: String
+  - `fileSize`: Integer (size in bytes)
+  - `totalRows`: Integer (default: 0)
+  - `processedRows`: Integer (default: 0)
+  - `successfulRows`: Integer (default: 0)
+  - `failedRows`: Integer (default: 0)
+  - `errors`: Json? (Structured JSON array of `{ row, column, value, code, message }`)
+  - `metadata`: Json? (Context metadata e.g. execution options `{ mode: 'CREATE' | 'UPSERT' }`)
+  - `completedAt`: Timestamp with time zone?
+  - `createdAt`, `updatedAt`: Timestamps
+- **Constraints & Indexes**:
+  - Indexes on `[organizationId]`, `[organizationId, status]`, `[organizationId, type]`, `[organizationId, createdAt]`.
+- **Relations**:
+  - Many-to-One with `Organization` (enforcing strict tenant isolation).
+  - Many-to-One with `User` (audit tracking who initiated the import).
+

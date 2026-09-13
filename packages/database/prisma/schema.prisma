@@ -29,6 +29,9 @@ model User {
   approvedSalesOrders       SalesOrder[]             @relation("SalesOrderApprover")
   fulfilledSalesOrders      SalesOrder[]             @relation("SalesOrderFulfiller")
   cancelledSalesOrders      SalesOrder[]             @relation("SalesOrderCanceller")
+  notifications             Notification[]
+  exportJobs                ExportJob[]
+  importJobs                ImportJob[]
 }
 
 model Organization {
@@ -54,6 +57,9 @@ model Organization {
   customers          Customer[]
   salesOrders        SalesOrder[]
   salesOrderLines    SalesOrderLine[]
+  notifications      Notification[]
+  exportJobs         ExportJob[]
+  importJobs         ImportJob[]
 }
 
 model Role {
@@ -585,6 +591,110 @@ model SalesOrderLine {
   @@index([organizationId])
   @@index([organizationId, salesOrderId])
   @@index([organizationId, productId])
+  @@index([organizationId, createdAt])
+}
+
+enum NotificationType {
+  LOW_STOCK
+  OUT_OF_STOCK
+  EXPORT_READY
+  EXPORT_FAILED
+  IMPORT_COMPLETED
+  IMPORT_FAILED
+  SYSTEM
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  organizationId String
+  userId         String?
+  type           NotificationType @default(SYSTEM)
+  title          String
+  message        String
+  metadata       Json?
+  isRead         Boolean          @default(false)
+  readAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, isRead])
+  @@index([organizationId, userId, isRead])
+  @@index([organizationId, createdAt])
+}
+
+enum ExportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ExportJob {
+  id             String          @id @default(uuid())
+  organizationId String
+  userId         String
+  reportType     String
+  status         ExportJobStatus @default(PENDING)
+  queryParams    Json?
+  fileName       String?
+  fileSize       Int?
+  rowCount       Int?
+  errorMessage   String?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
+  @@index([organizationId, createdAt])
+}
+
+enum ImportJobType {
+  PRODUCT
+  STOCK
+}
+
+enum ImportJobStatus {
+  PENDING
+  VALIDATING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIALLY_COMPLETED
+}
+
+model ImportJob {
+  id             String          @id @default(uuid())
+  organizationId String
+  userId         String
+  type           ImportJobType
+  status         ImportJobStatus @default(PENDING)
+  fileName       String
+  fileSize       Int
+  totalRows      Int             @default(0)
+  processedRows  Int             @default(0)
+  successfulRows Int             @default(0)
+  failedRows     Int             @default(0)
+  errors         Json?
+  metadata       Json?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, userId])
   @@index([organizationId, createdAt])
 }
 

@@ -43,3 +43,7 @@ Thumbs.db
 *.njsproj
 # TypeScript build cache
 *.tsbuildinfo
+
+# Local ephemeral file storage
+storage/
+apps/api/storage/

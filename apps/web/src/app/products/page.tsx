@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Plus, UploadCloud } from 'lucide-react';
 import { Button, Skeleton } from '@repo/ui';
 import { useProducts } from '../../hooks/use-products';
 import { usePermissions } from '../../hooks/use-permissions';
@@ -238,16 +238,27 @@ function ProductsPageContent() {
             Manage your organization&apos;s product catalog, units, and categories.
           </p>
         </div>
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           {canCreateProduct && (
-            <Button
-              onClick={() => setIsCreateOpen(true)}
-              className="w-full sm:w-auto"
-              aria-label="Add new product"
-            >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              Add Product
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/imports?type=PRODUCT')}
+                className="w-full sm:w-auto"
+                aria-label="Import products from CSV"
+              >
+                <UploadCloud className="mr-2 h-4 w-4" aria-hidden="true" />
+                Import CSV
+              </Button>
+              <Button
+                onClick={() => setIsCreateOpen(true)}
+                className="w-full sm:w-auto"
+                aria-label="Add new product"
+              >
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Add Product
+              </Button>
+            </>
           )}
         </div>
       </div>

@@ -71,12 +71,23 @@
 
 ## Reporting
 
-- [ ] inventory valuation
-- [ ] stock movement
-- [ ] sales
-- [ ] low stock
+- [x] inventory valuation
+- [x] stock movement
+- [x] sales
+- [x] low stock
 - [ ] expiry
-- [ ] export jobs
+- [x] export jobs
+
+## Bulk Operations & Imports
+
+- [x] RFC 4180 CSV parser with formula injection protection and BOM stripping
+- [x] Product catalog bulk import (CREATE / UPSERT modes)
+- [x] Stock mutation bulk import (strict StockMutationService authority & idempotency)
+- [x] Dry-run validation preview API (`POST /imports/preview`)
+- [x] Asynchronous background import worker (`BullMQ` `import-queue`)
+- [x] Persistent `ImportJob` state machine and progress tracking
+- [x] Structured error CSV export (`GET /imports/:id/errors`)
+- [x] Next.js Bulk Import UI with drag & drop, preview table, and live polling
 
 ## Reliability
 

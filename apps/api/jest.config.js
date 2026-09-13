@@ -9,7 +9,7 @@ module.exports = {
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   transformIgnorePatterns: [
-    'node_modules/(?!(\\.pnpm/.*(@nestjs\\+jwt|jsonwebtoken)|@nestjs/jwt|jsonwebtoken))',
+    'node_modules/(?!(\\.pnpm/.*(@nestjs\\+jwt|jsonwebtoken|@nestjs\\+bullmq|@nestjs\\+bull-shared|bullmq)|@nestjs/jwt|jsonwebtoken|@nestjs/bullmq|@nestjs/bull-shared|bullmq))',
   ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

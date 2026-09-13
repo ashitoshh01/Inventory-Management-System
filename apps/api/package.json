@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^11.0.11",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.11",
@@ -20,6 +21,7 @@
     "@repo/database": "workspace:*",
     "@repo/types": "workspace:*",
     "argon2": "^0.45.1",
+    "bullmq": "^6.3.4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",

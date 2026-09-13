@@ -690,5 +690,58 @@ For inbound webhooks:
     - Body (`CancelStockTransferDto`):
       - `reason`: required string (max 500 chars)
     - Sets `cancelledById`, `cancelledAt`, `cancellationReason`, and status to `CANCELLED`.
-    - Records audit event `stock-transfer.cancelled`.
     - Status: `200 OK` or `409 Conflict` if transfer already `IN_TRANSIT` or `RECEIVED`.
+
+### Imports & Bulk Operations Endpoints (`/api/v1/imports`)
+
+- Base Path: `/api/v1/imports`
+- Protected by `JwtAuthGuard` and `OrganizationGuard`.
+- Requires `x-organization-id` header matching an active organization membership.
+- Content-Type: `multipart/form-data` for file uploads (`file` field, RFC 4180 CSV, max 10MB, max 10,000 rows).
+
+#### Endpoints:
+- `POST /api/v1/imports/preview` — Dry-Run Validation (Read-Only)
+  - Permissions: `product.create` (for `type: 'PRODUCT'`) or `stock.mutate` (for `type: 'STOCK'`)
+  - Multipart fields:
+    - `file`: CSV file (required)
+    - `type`: `PRODUCT` | `STOCK` (required)
+    - `mode`: `CREATE` | `UPSERT` (optional, default `CREATE`, applicable to `PRODUCT`)
+  - Performs non-mutating schema and relational validation without persisting any database records.
+  - Returns `201 Created` with `ImportPreviewDto`:
+    - `type`: `PRODUCT` | `STOCK`
+    - `fileName`: string
+    - `fileSize`: number
+    - `totalRows`: number
+    - `validRows`: number
+    - `invalidRows`: number
+    - `previewRows`: Array of `{ rowNumber: number, data: Record<string, string>, isValid: boolean, errors: ImportRowErrorDto[] }`
+    - `headers`: string[]
+
+- `POST /api/v1/imports` — Create Asynchronous Import Job
+  - Permissions: `product.create` (for `type: 'PRODUCT'`) or `stock.mutate` (for `type: 'STOCK'`)
+  - Multipart fields:
+    - `file`: CSV file (required)
+    - `type`: `PRODUCT` | `STOCK` (required)
+    - `mode`: `CREATE` | `UPSERT` (optional, default `CREATE`)
+  - Validates CSV file and header schema, stores uploaded file safely in `storage/imports/import-{jobId}.csv`, creates `ImportJob` record in database with status `PENDING`, and enqueues background job onto BullMQ queue `import-queue`.
+  - Returns `201 Created` with `ImportJobDto`.
+
+- `GET /api/v1/imports` — List Import Jobs
+  - Query parameters:
+    - `page`: integer (default 1)
+    - `limit`: integer (default 20, max 100)
+    - `type`: optional filter (`PRODUCT` | `STOCK`)
+  - Scoped strictly to authenticated organization.
+  - Returns `200 OK` with paginated `ImportJobDto[]`.
+
+- `GET /api/v1/imports/:id` — Get Import Job Status & Progress
+  - Parameter `:id`: UUIDv4
+  - Scoped strictly to authenticated organization (rejects cross-tenant access with 404).
+  - Returns `200 OK` with `ImportJobDto` including `status`, `totalRows`, `processedRows`, `successfulRows`, `failedRows`, and structured errors.
+
+- `GET /api/v1/imports/:id/errors` — Export Structured Error CSV
+  - Parameter `:id`: UUIDv4
+  - Scoped strictly to authenticated organization.
+  - Streams RFC 4180 CSV with Content-Type `text/csv` and Content-Disposition `attachment; filename="import-errors-{id}.csv"`.
+  - Columns: `Row Number,Column,Value,Error Code,Error Message` (sanitized against formula injection with quote prepending for `=, +, -, @`).
+

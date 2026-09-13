@@ -1,11 +1,12 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OrganizationGuard } from '../../common/guards/organization.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { CurrentOrganization } from '../../common/decorators/current-organization.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { Organization } from '@repo/database';
+import { Organization, User } from '@repo/database';
 import { ReportsService } from './reports.service';
 import { QueryReportDto, ExportReportDto } from './dto/reports-query.dto';
 
@@ -65,4 +66,37 @@ export class ReportsController {
   ) {
     return this.reportsService.exportReportCsv(org.id, query, res);
   }
+
+  @Post('exports')
+  @RequirePermissions('stock.read')
+  async createExportJob(
+    @CurrentOrganization() org: Organization,
+    @CurrentUser() user: User,
+    @Body() dto: ExportReportDto,
+  ) {
+    return this.reportsService.createAsyncExportJob(org.id, user.id, dto);
+  }
+
+  @Get('exports/:id')
+  @RequirePermissions('stock.read')
+  async getExportJob(
+    @CurrentOrganization() org: Organization,
+    @Param('id') id: string,
+  ) {
+    return this.reportsService.getExportJob(org.id, id);
+  }
+
+  @Get('exports/:id/download')
+  @RequirePermissions('stock.read')
+  async downloadExport(
+    @CurrentOrganization() org: Organization,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const { filePath, fileName } = await this.reportsService.getExportFilePath(org.id, id);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    return res.sendFile(filePath);
+  }
 }
+

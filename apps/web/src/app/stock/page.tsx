@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Filter, Plus } from 'lucide-react';
+import { Filter, Plus, UploadCloud } from 'lucide-react';
 import { useStockBalances } from '../../hooks/use-stock';
 import { useDashboardStats } from '../../hooks/use-dashboard';
 import { usePermissions } from '../../hooks/use-permissions';
@@ -252,6 +252,17 @@ function StockPageContent() {
             <Filter className="h-4 w-4 text-slate-500" />
             <span>Filters</span>
           </button>
+
+          {/* Import Stock Button */}
+          {canMutateStock && (
+            <Link
+              href="/imports?type=STOCK"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <UploadCloud className="h-4 w-4 text-slate-500" />
+              <span>Import Stock</span>
+            </Link>
+          )}
 
           {/* + Add Product Button */}
           {canCreateProduct && (

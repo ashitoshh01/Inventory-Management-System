@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma, PrismaService } from '@repo/database';
 import { StockBalanceDto, StockLedgerEntryDto } from '@repo/types';
 import { AuditService } from '../audit/audit.service';
+import { QueueService } from '../queue/queue.service';
 import { StockMutationInput, StockMutationResult } from './stock.types';
 import { StockQuantityValidator } from './stock.quantity';
 import { QuantityUtil } from '../core/utils/quantity.util';
@@ -21,10 +22,12 @@ interface LockedBalanceRow {
 @Injectable()
 export class StockMutationService {
   private static readonly MAX_TRANSACTION_RETRIES = 3;
+  private static readonly LOW_STOCK_THRESHOLD = 10;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly queueService?: QueueService,
   ) {}
 
   /**
@@ -112,6 +115,20 @@ export class StockMutationService {
         },
         ...(input.requestId ? { requestId: input.requestId } : {}),
       });
+
+      // 6. Enqueue background low-stock check if balance is at or below threshold
+      const finalQty = parseFloat(mutationResult.balance.quantity);
+      if (this.queueService && finalQty <= StockMutationService.LOW_STOCK_THRESHOLD) {
+        this.queueService
+          .enqueueLowStockCheck({
+            organizationId: input.organizationId,
+            productId: input.productId,
+            warehouseId: input.warehouseId,
+          })
+          .catch(() => {
+            // Background enqueue failure must never fail the committed transaction
+          });
+      }
 
       return mutationResult;
     });

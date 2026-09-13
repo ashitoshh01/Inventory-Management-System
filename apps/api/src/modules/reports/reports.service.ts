@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
 import { PrismaService, Prisma } from '@repo/database';
 import type {
   StockMovementReportResponseDto,
@@ -12,12 +14,19 @@ import type {
   ProcurementReportItemDto,
   SalesReportResponseDto,
   SalesReportItemDto,
+  ExportJobDto,
+  ExportJobResponseDto,
 } from '@repo/types';
 import { QueryReportDto, ExportReportDto } from './dto/reports-query.dto';
+import { QueueService } from '../queue/queue.service';
+import { EXPORTS_STORAGE_DIR } from './reports.constants';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly queueService?: QueueService,
+  ) {}
 
   /**
    * 1. Stock Movement Report
@@ -517,15 +526,15 @@ export class ReportsService {
   }
 
   /**
-   * 6. Stream real RFC 4180 CSV export with security filters and summary metadata.
+   * 6. Generate real RFC 4180 CSV export string with security filters and summary metadata.
    */
-  async exportReportCsv(organizationId: string, query: ExportReportDto, res: Response): Promise<void> {
+  async generateReportCsvString(
+    organizationId: string,
+    query: ExportReportDto,
+  ): Promise<{ csvString: string; rowCount: number; filename: string }> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${query.reportType}-${timestamp}.csv`;
-
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const lines: string[] = [];
 
     const escapeCsv = (val: unknown): string => {
       if (val === null || val === undefined) return '""';
@@ -537,24 +546,26 @@ export class ReportsService {
     };
 
     const writeLine = (fields: unknown[]) => {
-      res.write(fields.map(escapeCsv).join(',') + '\r\n');
+      lines.push(fields.map(escapeCsv).join(','));
     };
 
     // Metadata header
-    res.write(`# Report: ${query.reportType.toUpperCase()}\r\n`);
-    res.write(`# Generated At: ${new Date().toISOString()}\r\n`);
-    res.write(`# Organization: ${organizationId}\r\n`);
-    if (query.warehouseId) res.write(`# Warehouse Filter: ${query.warehouseId}\r\n`);
-    if (query.startDate) res.write(`# Start Date: ${query.startDate}\r\n`);
-    if (query.endDate) res.write(`# End Date: ${query.endDate}\r\n`);
-    res.write('\r\n');
+    lines.push(`# Report: ${query.reportType.toUpperCase()}`);
+    lines.push(`# Generated At: ${new Date().toISOString()}`);
+    lines.push(`# Organization: ${organizationId}`);
+    if (query.warehouseId) lines.push(`# Warehouse Filter: ${query.warehouseId}`);
+    if (query.startDate) lines.push(`# Start Date: ${query.startDate}`);
+    if (query.endDate) lines.push(`# End Date: ${query.endDate}`);
+    lines.push('');
 
     // Unpaginated export (up to safe bounds, e.g. 5000 rows)
     const exportLimitDto: QueryReportDto = { ...query, page: 1, limit: 5000, getSkip: () => 0, getTake: () => 5000 };
+    let rowCount = 0;
 
     switch (query.reportType) {
       case 'stock-movement': {
         const data = await this.getStockMovementReport(organizationId, exportLimitDto);
+        rowCount = data.items.length;
         writeLine([
           'Date',
           'Product SKU',
@@ -585,7 +596,7 @@ export class ReportsService {
             item.actorEmail ?? '',
           ]);
         }
-        res.write('\r\n');
+        lines.push('');
         writeLine([
           'TOTAL MOVEMENTS',
           data.summary.totalMovements,
@@ -601,6 +612,7 @@ export class ReportsService {
 
       case 'inventory-valuation': {
         const data = await this.getInventoryValuationReport(organizationId, exportLimitDto);
+        rowCount = data.items.length;
         writeLine([
           'Product SKU',
           'Product Name',
@@ -631,7 +643,7 @@ export class ReportsService {
             item.stockStatus,
           ]);
         }
-        res.write('\r\n');
+        lines.push('');
         writeLine([
           'TOTAL ITEMS',
           data.summary.totalItems,
@@ -647,6 +659,7 @@ export class ReportsService {
 
       case 'reconciliation': {
         const data = await this.getReconciliationReport(organizationId, exportLimitDto);
+        rowCount = data.items.length;
         writeLine([
           'Product SKU',
           'Product Name',
@@ -673,7 +686,7 @@ export class ReportsService {
             item.ledgerEntriesCount,
           ]);
         }
-        res.write('\r\n');
+        lines.push('');
         writeLine([
           'TOTAL CHECKED',
           data.summary.totalBuckets,
@@ -687,6 +700,7 @@ export class ReportsService {
 
       case 'procurement': {
         const data = await this.getProcurementReport(organizationId, exportLimitDto);
+        rowCount = data.items.length;
         writeLine([
           'PO Number',
           'Supplier',
@@ -711,7 +725,7 @@ export class ReportsService {
             item.linesCount,
           ]);
         }
-        res.write('\r\n');
+        lines.push('');
         writeLine([
           'TOTAL ORDERS',
           data.summary.totalOrders,
@@ -727,6 +741,7 @@ export class ReportsService {
 
       case 'sales': {
         const data = await this.getSalesReport(organizationId, exportLimitDto);
+        rowCount = data.items.length;
         writeLine([
           'Order Number',
           'Customer',
@@ -749,7 +764,7 @@ export class ReportsService {
             item.linesCount,
           ]);
         }
-        res.write('\r\n');
+        lines.push('');
         writeLine([
           'TOTAL ORDERS',
           data.summary.totalOrders,
@@ -764,6 +779,127 @@ export class ReportsService {
       }
     }
 
-    res.end();
+    return {
+      csvString: lines.join('\r\n') + '\r\n',
+      rowCount,
+      filename,
+    };
+  }
+
+  /**
+   * Stream real RFC 4180 CSV export response.
+   */
+  async exportReportCsv(organizationId: string, query: ExportReportDto, res: Response): Promise<void> {
+    const { csvString, filename } = await this.generateReportCsvString(organizationId, query);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    if (typeof res.send === 'function') {
+      res.send(csvString);
+    } else {
+      res.write(csvString);
+      res.end();
+    }
+  }
+
+  /**
+   * 7. Creates an asynchronous report export job and enqueues it in BullMQ.
+   */
+  async createAsyncExportJob(
+    organizationId: string,
+    userId: string,
+    query: ExportReportDto,
+  ): Promise<ExportJobResponseDto> {
+    const exportJob = await this.prisma.exportJob.create({
+      data: {
+        organizationId,
+        userId,
+        reportType: query.reportType,
+        status: 'PENDING',
+        queryParams: JSON.parse(JSON.stringify(query)),
+      },
+    });
+
+    if (this.queueService) {
+      await this.queueService.enqueueReportExport({
+        exportId: exportJob.id,
+        organizationId,
+        userId,
+        reportType: query.reportType,
+        queryParams: query,
+      });
+    }
+
+    return {
+      exportId: exportJob.id,
+      status: exportJob.status,
+      message: 'Report export job queued successfully',
+      createdAt: exportJob.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * 8. Retrieves the status and details of an export job.
+   */
+  async getExportJob(organizationId: string, exportId: string): Promise<ExportJobDto> {
+    const job = await this.prisma.exportJob.findFirst({
+      where: {
+        id: exportId,
+        organizationId,
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Export job ${exportId} not found`);
+    }
+
+    return {
+      id: job.id,
+      organizationId: job.organizationId,
+      userId: job.userId,
+      reportType: job.reportType,
+      status: job.status,
+      queryParams: job.queryParams as any,
+      fileName: job.fileName,
+      fileSize: job.fileSize,
+      rowCount: job.rowCount,
+      errorMessage: job.errorMessage,
+      completedAt: job.completedAt ? job.completedAt.toISOString() : null,
+      createdAt: job.createdAt.toISOString(),
+      updatedAt: job.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * 9. Resolves the physical path of a completed export file for download.
+   */
+  async getExportFilePath(
+    organizationId: string,
+    exportId: string,
+  ): Promise<{ filePath: string; fileName: string }> {
+    const job = await this.prisma.exportJob.findFirst({
+      where: {
+        id: exportId,
+        organizationId,
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Export job ${exportId} not found`);
+    }
+
+    if (job.status !== 'COMPLETED' || !job.fileName) {
+      throw new BadRequestException(`Export is not ready for download (current status: ${job.status})`);
+    }
+
+    const filePath = path.join(EXPORTS_STORAGE_DIR, job.fileName);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('Export file not found on disk or has expired');
+    }
+
+    return { filePath, fileName: job.fileName };
   }
 }
+

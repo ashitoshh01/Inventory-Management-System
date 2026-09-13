@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  UploadCloud,
 } from 'lucide-react';
 
 import { cn } from '@repo/ui';
@@ -49,6 +50,7 @@ const navigation: NavItem[] = [
     icon: ShoppingCart,
   },
   { name: 'Transfers', href: '/transfers', icon: ArrowLeftRight },
+  { name: 'Bulk Import', href: '/imports', icon: UploadCloud },
   {
     name: 'Reports',
     href: '/reports',

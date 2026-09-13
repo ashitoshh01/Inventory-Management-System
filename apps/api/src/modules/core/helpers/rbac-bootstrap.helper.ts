@@ -52,6 +52,8 @@ export const CANONICAL_PERMISSIONS = [
   { action: 'sales-order.cancel', description: 'Cancel sales orders' },
   { action: 'report.read', description: 'View business reports and analytics' },
   { action: 'report.export', description: 'Export business reports to CSV' },
+  { action: 'notification.read', description: 'View notifications and alerts' },
+  { action: 'notification.manage', description: 'Mark notifications as read and manage alert state' },
 ] as const;
 
 /**

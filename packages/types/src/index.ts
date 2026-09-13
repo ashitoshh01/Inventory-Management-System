@@ -19,4 +19,5 @@ export * from './dashboard.js';
 export * from './customer.js';
 export * from './sales-order.js';
 export * from './reports.js';
-
+export * from './notifications.js';
+export * from './jobs.js';
