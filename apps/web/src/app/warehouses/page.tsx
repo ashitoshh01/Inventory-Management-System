@@ -103,24 +103,31 @@ function WarehousesPageContent() {
       else current.delete('limit');
 
       const qs = current.toString();
+      const currentQs = searchParams ? searchParams.toString() : '';
+      if (qs === currentQs) return;
+
       const nextPath = qs ? `${pathname || '/warehouses'}?${qs}` : pathname || '/warehouses';
       router.replace(nextPath, { scroll: false });
     },
     [searchParams, debouncedSearch, status, sortBy, sortOrder, page, limit, pathname, router],
   );
 
+  const syncToUrlRef = React.useRef(syncToUrl);
+  syncToUrlRef.current = syncToUrl;
+
   // Debounce search input by 300ms
   React.useEffect(() => {
+    if (isFirstRender.current) {
+      return;
+    }
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
-      if (!isFirstRender.current) {
-        syncToUrl({ search, page: 1 });
-      }
+      syncToUrlRef.current({ search, page: 1 });
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, syncToUrl]);
+  }, [search]);
 
   // Mark first render completed
   React.useEffect(() => {

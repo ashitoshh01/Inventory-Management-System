@@ -64,13 +64,8 @@ function TransfersPageContent() {
   const [page, setPage] = React.useState<number>(initialPage);
   const [limit, setLimit] = React.useState<number>(initialLimit);
 
-  // Debounce search input
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  // Track whether initial mount has completed to avoid redundant URL updates
+  const isFirstRender = React.useRef(true);
 
   // Sync to URL
   const syncToUrl = React.useCallback(
@@ -126,6 +121,9 @@ function TransfersPageContent() {
       else current.delete('limit');
 
       const qs = current.toString();
+      const currentQs = searchParams ? searchParams.toString() : '';
+      if (qs === currentQs) return;
+
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     [
@@ -142,6 +140,25 @@ function TransfersPageContent() {
       pathname,
     ],
   );
+
+  const syncToUrlRef = React.useRef(syncToUrl);
+  syncToUrlRef.current = syncToUrl;
+
+  // Debounce search input
+  React.useEffect(() => {
+    if (isFirstRender.current) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      syncToUrlRef.current({ search, page: 1 });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  React.useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
 
   // Fetch query
   const queryParams = React.useMemo(
@@ -228,7 +245,6 @@ function TransfersPageContent() {
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(1);
-    syncToUrl({ search: value, page: 1 });
   };
 
   const handleStatusChange = (newStatus: StockTransferStatus | undefined) => {

@@ -105,6 +105,9 @@ function LedgerPageContent() {
       else current.delete('limit');
 
       const qs = current.toString();
+      const currentQs = searchParams ? searchParams.toString() : '';
+      if (qs === currentQs) return;
+
       const nextPath = qs ? `${pathname || '/stock/ledger'}?${qs}` : pathname || '/stock/ledger';
       router.replace(nextPath, { scroll: false });
     },

@@ -93,6 +93,9 @@ function StockPageContent() {
       else current.delete('limit');
 
       const qs = current.toString();
+      const currentQs = searchParams ? searchParams.toString() : '';
+      if (qs === currentQs) return;
+
       const nextPath = qs ? `${pathname || '/stock'}?${qs}` : pathname || '/stock';
       router.replace(nextPath, { scroll: false });
     },

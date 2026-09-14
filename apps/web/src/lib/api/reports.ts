@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, getBaseUrl } from './client';
 import type {
   StockMovementReportResponseDto,
   InventoryValuationReportResponseDto,
@@ -50,7 +50,7 @@ export const reportsApi = {
       reportType,
       ...(params ?? {}),
     } as Record<string, unknown>);
-    return `/api/v1/reports/export${qs}`;
+    return `${getBaseUrl()}/reports/export${qs}`;
   },
 
   downloadCsv: async (reportType: string, params?: ReportQueryParams) => {
@@ -64,7 +64,8 @@ export const reportsApi = {
         ? localStorage.getItem('activeOrganizationId') || ''
         : '';
 
-    const res = await fetch(`/api/v1/reports/export${qs}`, {
+    const res = await fetch(`${getBaseUrl()}/reports/export${qs}`, {
+      credentials: 'include',
       headers: {
         ...(activeOrgId ? { 'x-organization-id': activeOrgId } : {}),
       },

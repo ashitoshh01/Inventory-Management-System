@@ -38,7 +38,7 @@ export interface ApiClientOptions extends RequestInit {
   _isRetry?: boolean;
 }
 
-const getBaseUrl = () => {
+export const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
   }

@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, getBaseUrl } from './client';
 import type { ImportJobDto, ImportPreviewDto, ImportJobType } from '@repo/types';
 
 export interface ListImportJobsParams {
@@ -56,7 +56,8 @@ export const importsApi = {
         ? localStorage.getItem('activeOrganizationId') || ''
         : '';
 
-    const res = await fetch(`/api/v1/imports/${jobId}/errors`, {
+    const res = await fetch(`${getBaseUrl()}/imports/${jobId}/errors`, {
+      credentials: 'include',
       headers: {
         ...(activeOrgId ? { 'x-organization-id': activeOrgId } : {}),
       },
