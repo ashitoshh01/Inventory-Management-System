@@ -38,6 +38,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder --chown=nextjs:nodejs /app/pruned/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/pruned/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./public
 
 USER nextjs
 
