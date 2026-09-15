@@ -93,7 +93,7 @@ export class ReportExportProcessor extends WorkerHost {
       });
 
       // 4. Emit EXPORT_READY notification
-      const friendlyName = reportType.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const friendlyName = reportType.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
       await this.prisma.notification.create({
         data: {
           organizationId,
@@ -127,7 +127,7 @@ export class ReportExportProcessor extends WorkerHost {
       });
 
       // Emit EXPORT_FAILED notification
-      const friendlyName = reportType.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const friendlyName = reportType.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
       await this.prisma.notification.create({
         data: {
           organizationId,
