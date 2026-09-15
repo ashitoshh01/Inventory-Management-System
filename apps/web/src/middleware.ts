@@ -14,8 +14,10 @@ export function middleware(request: NextRequest) {
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
 
-  // If user is already authenticated and visits login/register, redirect to dashboard
-  if (isPublicPath && isAuthenticated) {
+  // If user already has an active access token and visits login/register, redirect to dashboard.
+  // Note: Only redirect if hasAccessToken is true; having only a refreshToken might mean it is
+  // stale or invalid, which would cause an infinite redirect loop between /login and /.
+  if (isPublicPath && hasAccessToken) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

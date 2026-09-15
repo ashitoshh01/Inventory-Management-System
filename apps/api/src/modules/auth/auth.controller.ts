@@ -63,24 +63,30 @@ export class AuthController {
   @RateLimit({ limit: 20, windowSeconds: 60, keyPrefix: 'refresh' })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.['refreshToken'];
-    const result = await this.authService.refreshSession(token);
-    const isSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+    try {
+      const result = await this.authService.refreshSession(token);
+      const isSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
 
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-    });
+      res.cookie('accessToken', result.accessToken, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000,
+      });
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
-    return { user: result.user };
+      return { user: result.user };
+    } catch (err) {
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      throw err;
+    }
   }
 
   @HttpCode(HttpStatus.OK)

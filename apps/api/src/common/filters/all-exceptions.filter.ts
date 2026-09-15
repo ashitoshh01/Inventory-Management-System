@@ -94,17 +94,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = 'An unexpected internal error occurred.';
     }
 
-    // Log the error internally with full diagnostic stack and requestId
-    this.logger.error(
-      `Unhandled exception on ${request.method} ${request.url}: ${message}`,
-      exception instanceof Error ? exception.stack : String(exception),
-      'AllExceptionsFilter',
-      {
-        requestId,
-        route: request.url,
-        statusCode: status,
-      },
-    );
+    // Log internal 5xx errors with full stack, and client 4xx as warnings
+    if (status >= 500) {
+      this.logger.error(
+        `Unhandled exception on ${request.method} ${request.url}: ${message}`,
+        exception instanceof Error ? exception.stack : String(exception),
+        'AllExceptionsFilter',
+        {
+          requestId,
+          route: request.url,
+          statusCode: status,
+        },
+      );
+    } else {
+      this.logger.warn(
+        `HTTP ${status} on ${request.method} ${request.url}: ${message}`,
+        'AllExceptionsFilter',
+        {
+          requestId,
+          route: request.url,
+          statusCode: status,
+        },
+      );
+    }
 
     const errorResponse: ApiErrorEnvelope = {
       error: {
