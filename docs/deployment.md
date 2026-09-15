@@ -12,7 +12,7 @@ CDN / Load Balancer
               │
               ├── PostgreSQL
               ├── Redis
-              └── S3-compatible storage
+              └── Cloudinary Storage
 ```
 
 This is enough for the initial ~100-user target.
@@ -37,11 +37,11 @@ DATABASE_URL
 REDIS_URL
 SESSION_SECRET
 JWT_SECRET                    # only if token architecture is selected
-S3_ENDPOINT
-S3_BUCKET
-S3_ACCESS_KEY_ID
-S3_SECRET_ACCESS_KEY
-S3_REGION
+CLOUDINARY_URL
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+CLOUDINARY_REGION
 APP_URL
 API_URL
 LOG_LEVEL

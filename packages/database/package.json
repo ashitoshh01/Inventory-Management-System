@@ -12,10 +12,10 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate --schema=./prisma/schema.prisma && tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "prisma:generate": "dotenv -e ../../.env -c -- prisma generate",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "dotenv -e ../../.env -c -- prisma migrate dev",
     "prisma:migrate:deploy": "dotenv -e ../../.env -c -- prisma migrate deploy",
     "prisma:status": "dotenv -e ../../.env -c -- prisma migrate status",
