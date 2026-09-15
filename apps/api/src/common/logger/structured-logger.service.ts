@@ -48,15 +48,28 @@ export class StructuredLogger implements LoggerService {
     });
   }
 
-  error(message: string, stack?: string, context?: string, metadata?: Partial<LogEntry>): void {
+  error(message: any, stack?: string, context?: string, metadata?: Partial<LogEntry>): void {
+    let msgString = '';
+    let errStack = stack;
+
+    if (message instanceof Error) {
+      msgString = message.message;
+      errStack = errStack || message.stack;
+    } else if (typeof message === 'object' && message !== null) {
+      msgString = message.message || message.description || JSON.stringify(message);
+      errStack = errStack || message.stack;
+    } else {
+      msgString = String(message);
+    }
+
     this.print({
       timestamp: new Date().toISOString(),
       level: 'error',
       service: this.serviceName,
       environment: this.environment,
-      message,
+      message: msgString,
       context,
-      error: stack ? { message, stack } : undefined,
+      error: errStack ? { message: msgString, stack: errStack } : undefined,
       ...metadata,
     });
   }
