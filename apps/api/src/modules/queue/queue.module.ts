@@ -7,17 +7,19 @@ import { QueueService } from './queue.service';
 export function parseRedisConnection(redisUrlStr: string) {
   try {
     const url = new URL(redisUrlStr);
+    const isTls = url.protocol === 'rediss:';
     return {
       host: url.hostname || 'localhost',
       port: parseInt(url.port || '6379', 10),
       username: url.username || undefined,
       password: url.password || undefined,
+      tls: isTls ? {} : undefined,
       maxRetriesPerRequest: null,
     };
   } catch {
     return {
       host: 'localhost',
-      port: 6380,
+      port: 6379,
       maxRetriesPerRequest: null,
     };
   }

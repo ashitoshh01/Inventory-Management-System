@@ -45,5 +45,5 @@ Thumbs.db
 *.tsbuildinfo
 
 # Local ephemeral file storage
-storage/
+/storage/
 apps/api/storage/

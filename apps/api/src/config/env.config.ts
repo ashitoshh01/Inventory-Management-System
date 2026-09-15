@@ -4,6 +4,11 @@ export interface AppConfig {
   databaseUrl: string;
   redisUrl: string;
   corsOrigin: string;
+  cloudinaryUrl?: string | undefined;
+  cloudinaryCloudName?: string | undefined;
+  cloudinaryApiKey?: string | undefined;
+  cloudinaryApiSecret?: string | undefined;
+  storageProvider?: string | undefined;
 }
 
 export function validateEnv(): AppConfig {
@@ -14,6 +19,11 @@ export function validateEnv(): AppConfig {
     'postgresql://postgres:postgres@localhost:5432/inventory_dev?schema=public';
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+  const cloudinaryUrl = process.env.CLOUDINARY_URL;
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY;
+  const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET;
+  const storageProvider = process.env.STORAGE_PROVIDER || (cloudinaryUrl ? 'cloudinary' : 'local');
 
   return {
     nodeEnv,
@@ -21,5 +31,10 @@ export function validateEnv(): AppConfig {
     databaseUrl,
     redisUrl,
     corsOrigin,
+    cloudinaryUrl,
+    cloudinaryCloudName,
+    cloudinaryApiKey,
+    cloudinaryApiSecret,
+    storageProvider,
   };
 }

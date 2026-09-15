@@ -22,6 +22,7 @@ import { QueueModule } from './modules/queue/queue.module';
 import { WorkerModule } from './modules/worker/worker.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ImportsModule } from './modules/imports/imports.module';
     DatabaseModule,
     CoreModule,
     HealthModule,
+    StorageModule,
     AuditModule,
     AuthModule,
     OrganizationsModule,

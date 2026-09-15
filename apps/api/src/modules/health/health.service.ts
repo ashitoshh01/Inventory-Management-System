@@ -1,8 +1,9 @@
-import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, ServiceUnavailableException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@repo/database';
 import Redis from 'ioredis';
 import { StructuredLogger } from '../../common/logger/structured-logger.service';
+import { StorageService } from '../storage/storage.service';
 
 export interface LivenessResult {
   status: 'ok';
@@ -14,6 +15,7 @@ export interface ReadinessResult {
   status: 'ok' | 'degraded' | 'down';
   database: 'up' | 'down';
   redis: 'up' | 'down';
+  storage?: 'up' | 'down';
   timestamp: string;
 }
 
@@ -23,6 +25,7 @@ export class HealthService implements OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly storageService?: StorageService,
   ) {}
 
   onModuleDestroy(): void {
@@ -82,6 +85,21 @@ export class HealthService implements OnModuleDestroy {
       }
     }
 
+    // 3. Probe Storage (Cloudinary) if configured
+    let storageStatus: 'up' | 'down' | undefined = undefined;
+    if (this.storageService) {
+      try {
+        const isStorageUp = await this.storageService.ping();
+        storageStatus = isStorageUp ? 'up' : 'down';
+      } catch (err) {
+        this.logger.warn(
+          `Storage health probe failed: ${err instanceof Error ? err.message : String(err)}`,
+          'HealthService',
+        );
+        storageStatus = 'down';
+      }
+    }
+
     const isHealthy = databaseStatus === 'up' && redisStatus === 'up';
 
     if (!isHealthy) {
@@ -91,6 +109,7 @@ export class HealthService implements OnModuleDestroy {
         details: {
           database: databaseStatus,
           redis: redisStatus,
+          ...(storageStatus ? { storage: storageStatus } : {}),
         },
       });
     }
@@ -99,6 +118,7 @@ export class HealthService implements OnModuleDestroy {
       status: 'ok',
       database: databaseStatus,
       redis: redisStatus,
+      ...(storageStatus ? { storage: storageStatus } : {}),
       timestamp: new Date().toISOString(),
     };
   }
