@@ -1,35 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/register'];
-
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const hasAccessToken = request.cookies.has('accessToken');
-  const hasRefreshToken = request.cookies.has('refreshToken');
-  const isAuthenticated = hasAccessToken || hasRefreshToken;
-
-  const isPublicPath = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-
-  // If user already has an active access token and visits login/register, redirect to dashboard.
-  // Note: Only redirect if hasAccessToken is true; having only a refreshToken might mean it is
-  // stale or invalid, which would cause an infinite redirect loop between /login and /.
-  if (isPublicPath && hasAccessToken) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // If user is unauthenticated and visits a protected route, redirect to login
-  if (!isPublicPath && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    if (pathname !== '/') {
-      loginUrl.searchParams.set('callbackUrl', pathname);
-    }
-    return NextResponse.redirect(loginUrl);
-  }
-
+export function middleware(_request: NextRequest) {
   return NextResponse.next();
 }
 
