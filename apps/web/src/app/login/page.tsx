@@ -97,8 +97,15 @@ export default function LoginPage() {
           </div>
 
           <div className="text-sm text-center">
-            <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Don't have an account? Register here
+            <span className="text-slate-500">Don&apos;t have an account?</span>{' '}
+            <a
+              id="create-account-link"
+              href="https://wa.me/919604019444?text=Hi%2C%20I%20would%20like%20to%20request%20an%20account%20on%20StockMinistry.com."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
+              Create account
             </a>
           </div>
         </form>

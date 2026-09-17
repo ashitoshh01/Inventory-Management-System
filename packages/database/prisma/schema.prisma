@@ -8,12 +8,13 @@ generator client {
 }
 
 model User {
-  id           String                   @id @default(uuid())
-  email        String                   @unique
-  passwordHash String
-  isActive     Boolean                  @default(true)
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
+  id              String                   @id @default(uuid())
+  email           String                   @unique
+  passwordHash    String
+  isActive        Boolean                  @default(true)
+  isPlatformAdmin Boolean                  @default(false)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
   memberships               OrganizationMembership[]
   sessions                  Session[]
   createdStockLedgerEntries StockLedgerEntry[]
@@ -32,6 +33,7 @@ model User {
   notifications             Notification[]
   exportJobs                ExportJob[]
   importJobs                ImportJob[]
+  handledAccountRequests    AccountRequest[]
 }
 
 model Organization {
@@ -698,3 +700,28 @@ model ImportJob {
   @@index([organizationId, createdAt])
 }
 
+enum AccountRequestStatus {
+  PENDING
+  CONTACTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model AccountRequest {
+  id          String               @id @default(uuid())
+  name        String
+  phone       String
+  email       String?
+  status      AccountRequestStatus @default(PENDING)
+  notes       String?
+  handledById String?
+  handledAt   DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  handledBy   User?                @relation(fields: [handledById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+}

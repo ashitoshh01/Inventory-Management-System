@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   AuthMeResponse,
   LoginDto,
-  RegisterDto,
   OrganizationDto,
   OrganizationMembershipDto,
 } from '@repo/types';
@@ -16,9 +15,9 @@ interface AuthContextType {
   activeOrganizationId: string | null;
   activeOrganization: OrganizationDto | null;
   activeMembership: OrganizationMembershipDto | null;
+  isPlatformAdmin: boolean;
   isLoading: boolean;
   login: (data: LoginDto) => Promise<void>;
-  register: (data: RegisterDto) => Promise<void>;
   logout: () => Promise<void>;
   setActiveOrganizationId: (id: string) => void;
   refreshUser: () => Promise<void>;
@@ -69,12 +68,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await fetchUser();
   };
 
-  const register = async (data: RegisterDto) => {
-    await authApi.register(data);
-    await authApi.login({ email: data.email, password: data.password });
-    await fetchUser();
-  };
-
   const logout = async () => {
     try {
       await authApi.logout();
@@ -104,9 +97,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         activeOrganizationId,
         activeOrganization,
         activeMembership,
+        isPlatformAdmin: Boolean(user?.isPlatformAdmin),
         isLoading,
         login,
-        register,
         logout,
         setActiveOrganizationId,
         refreshUser: fetchUser,

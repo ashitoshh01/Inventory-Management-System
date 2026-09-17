@@ -8,16 +8,16 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { Response, Request } from 'express';
 
 import { AuthService } from './auth.service';
 
-import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { LoginDto } from './dto/auth.dto';
 
 import {
-  RegisterResponse,
   LoginResponse,
   AuthMeResponse,
 } from '@repo/types';
@@ -35,13 +35,16 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Public registration is disabled.
+   * Account creation is only available through the admin panel.
+   */
   @Post('register')
-  @UseGuards(AuthRateLimitGuard)
-  @RateLimit({ limit: 5, windowSeconds: 60, keyPrefix: 'register' })
-  async register(@Body() dto: RegisterDto): Promise<RegisterResponse> {
-    const result = await this.authService.register(dto);
-
-    return result;
+  @HttpCode(HttpStatus.FORBIDDEN)
+  async register(): Promise<never> {
+    throw new ForbiddenException(
+      'Public registration is disabled. Please contact the administrator to request an account.',
+    );
   }
 
   @HttpCode(HttpStatus.OK)

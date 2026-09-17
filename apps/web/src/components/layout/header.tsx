@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, Bell, LogOut, ChevronDown, Building } from 'lucide-react';
+import { Menu, Search, Bell, LogOut, ChevronDown, Building, ShieldCheck } from 'lucide-react';
 import { cn } from '@repo/ui';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -168,6 +168,22 @@ export function Header({ className, onMenuClick, searchValue, onSearchChange }: 
                       </span>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {user?.isPlatformAdmin && (
+                <div className="border-t border-slate-100 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      router.push('/admin');
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50"
+                  >
+                    <ShieldCheck className="h-4 w-4 text-purple-600" />
+                    Platform Admin
+                  </button>
                 </div>
               )}
 

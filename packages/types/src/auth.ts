@@ -2,6 +2,7 @@ export interface UserDto {
   id: string;
   email: string;
   isActive: boolean;
+  isPlatformAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }

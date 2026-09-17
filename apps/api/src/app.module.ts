@@ -23,6 +23,7 @@ import { WorkerModule } from './modules/worker/worker.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { StorageModule } from './modules/storage/storage.module';
     StorageModule,
     AuditModule,
     AuthModule,
+    AdminModule,
     OrganizationsModule,
     CategoriesModule,
     ProductsModule,

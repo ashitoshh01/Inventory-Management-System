@@ -14,7 +14,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login';
+  const isAdminPage = pathname?.startsWith('/admin');
 
   React.useEffect(() => {
     if (!isLoading && !user && !isAuthPage) {
@@ -22,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, user, isAuthPage, router]);
 
-  if (isAuthPage) {
+  if (isAuthPage || isAdminPage) {
     return <>{children}</>;
   }
 

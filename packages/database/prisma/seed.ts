@@ -101,6 +101,18 @@ async function main(): Promise<void> {
       });
     }
     console.info(`[Seed] Mapped ${allPermissions.length} permissions to Owner role successfully.`);
+
+    const platformAdminEmail = process.env.PLATFORM_ADMIN_EMAIL || 'admin@stockministry.com';
+    const adminUser = await prisma.user.findUnique({
+      where: { email: platformAdminEmail },
+    });
+    if (adminUser) {
+      await prisma.user.update({
+        where: { id: adminUser.id },
+        data: { isPlatformAdmin: true },
+      });
+      console.info(`[Seed] Promoted ${platformAdminEmail} to platform admin.`);
+    }
   } catch (error) {
     console.error('[Seed] Database connectivity check failed during seed.');
     throw error;

@@ -101,8 +101,9 @@ export const apiClient = async <T>(
   }
 
   if (typeof window !== 'undefined') {
+    const isAdminEndpoint = endpoint.startsWith('/admin');
     const orgId = localStorage.getItem('activeOrganizationId');
-    if (orgId && !headers.has('x-organization-id')) {
+    if (orgId && !headers.has('x-organization-id') && !isAdminEndpoint) {
       headers.set('x-organization-id', orgId);
     }
   }
@@ -124,8 +125,7 @@ export const apiClient = async <T>(
   // Handle 401 Unauthorized for token refresh
   const isAuthEndpoint =
     endpoint.startsWith('/auth/login') ||
-    endpoint.startsWith('/auth/refresh') ||
-    endpoint.startsWith('/auth/register');
+    endpoint.startsWith('/auth/refresh');
 
   if (response.status === 401 && !options?._isRetry && !isAuthEndpoint) {
     const refreshSuccess = await executeRefresh();
@@ -140,7 +140,7 @@ export const apiClient = async <T>(
       // Refresh failed: clear client state and redirect to login if in browser
       if (typeof window !== 'undefined') {
         localStorage.removeItem('activeOrganizationId');
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
