@@ -47,7 +47,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
               ? errorObj.message.join('; ')
               : exception.message;
 
-        if (errorObj.error && typeof errorObj.error === 'string') {
+        if (errorObj.code && typeof errorObj.code === 'string') {
+          code = errorObj.code;
+        } else if (errorObj.error && typeof errorObj.error === 'string') {
           code = errorObj.error.toUpperCase().replace(/\s+/g, '_');
         } else {
           code = this.getErrorCodeFromStatus(status);

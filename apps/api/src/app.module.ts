@@ -24,6 +24,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ImportsModule } from './modules/imports/imports.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ProfileModule } from './modules/profile/profile.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AdminModule } from './modules/admin/admin.module';
     StorageModule,
     AuditModule,
     AuthModule,
+    ProfileModule,
     AdminModule,
     OrganizationsModule,
     CategoriesModule,

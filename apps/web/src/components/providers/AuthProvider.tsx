@@ -8,6 +8,7 @@ import {
   OrganizationMembershipDto,
 } from '@repo/types';
 import { authApi } from '../../lib/api/auth';
+import { FirstLoginPasswordModal } from '../auth/first-login-password-modal';
 
 interface AuthContextType {
   user: AuthMeResponse['user'] | null;
@@ -106,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }}
     >
       {children}
+      <FirstLoginPasswordModal />
     </AuthContext.Provider>
   );
 };

@@ -18,6 +18,7 @@ import {
   ChevronRight,
   X,
   UploadCloud,
+  User,
 } from 'lucide-react';
 
 import { cn } from '@repo/ui';
@@ -65,6 +66,7 @@ const navigation: NavItem[] = [
       { name: 'Sales Summary', href: '/reports/sales' },
     ],
   },
+  { name: 'Profile', href: '/profile', icon: User },
 ];
 
 function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: boolean }) {

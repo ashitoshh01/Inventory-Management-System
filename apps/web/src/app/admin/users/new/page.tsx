@@ -130,6 +130,9 @@ export default function AdminCreateUserPage() {
             <p className="mt-1 text-[11px] text-slate-400">
               Password will be encrypted using Argon2id with memory cost 64MB and 4-way parallelism.
             </p>
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2 text-[11px] text-amber-800">
+              <span className="font-semibold">Temporary Password Policy:</span> This initial password is temporary. The user will be required to change it on their first login.
+            </div>
           </div>
 
           <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 space-y-4">

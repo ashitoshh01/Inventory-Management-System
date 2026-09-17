@@ -3,6 +3,7 @@ export interface UserDto {
   email: string;
   isActive: boolean;
   isPlatformAdmin?: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,4 +59,20 @@ export interface RegisterDto {
 export interface LoginDto {
   email: string;
   password: string;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface UpdateProfileDto {
+  email: string;
+}
+
+export interface ProfileResponse {
+  user: UserDto;
+  memberships: OrganizationMembershipDto[];
+  activeOrganization: OrganizationDto | null;
 }

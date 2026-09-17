@@ -33,6 +33,8 @@ describe('WarehousesController (Unit)', () => {
     email: 'test@example.com',
     passwordHash: 'hash',
     isActive: true,
+    isPlatformAdmin: false,
+    mustChangePassword: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

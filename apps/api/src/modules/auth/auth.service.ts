@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '@repo/database';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, ChangePasswordDto } from './dto/auth.dto';
 import { UserDto, OrganizationDto } from '@repo/types';
 import { randomBytes, createHash } from 'crypto';
 import { AuditService } from '../audit/audit.service';
@@ -152,6 +152,7 @@ export class AuthService {
         email: user.email,
         isActive: user.isActive,
         isPlatformAdmin: user.isPlatformAdmin,
+        mustChangePassword: user.mustChangePassword,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       },
@@ -223,6 +224,7 @@ export class AuthService {
         email: session.user.email,
         isActive: session.user.isActive,
         isPlatformAdmin: session.user.isPlatformAdmin,
+        mustChangePassword: session.user.mustChangePassword,
         createdAt: session.user.createdAt.toISOString(),
         updatedAt: session.user.updatedAt.toISOString(),
       },
@@ -275,6 +277,7 @@ export class AuthService {
         email: user.email,
         isActive: user.isActive,
         isPlatformAdmin: user.isPlatformAdmin,
+        mustChangePassword: user.mustChangePassword,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       },
@@ -309,6 +312,94 @@ export class AuthService {
             updatedAt: user.memberships[0].organization.updatedAt.toISOString(),
           }
         : null,
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ user: UserDto; accessToken: string; refreshToken: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('New password and confirmation password do not match');
+    }
+
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException('New password must be different from current password');
+    }
+
+    const isCurrentValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!isCurrentValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const passwordHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id,
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 4,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+      },
+    });
+
+    // Revoke all existing sessions for this user across all devices
+    await this.prisma.session.deleteMany({
+      where: { userId },
+    });
+
+    // Create fresh session and tokens for the current client
+    const payload = { sub: updatedUser.id, email: updatedUser.email };
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.AUTH_SECRET as string,
+      expiresIn: '15m',
+    });
+
+    const refreshToken = randomBytes(32).toString('hex');
+    const hashedRefreshToken = this.hashToken(refreshToken);
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await this.prisma.session.create({
+      data: {
+        userId: updatedUser.id,
+        token: hashedRefreshToken,
+        expiresAt,
+      },
+    });
+
+    await this.auditService.logEvent({
+      actorUserId: updatedUser.id,
+      action: 'user.password_changed',
+      entityType: 'User',
+      entityId: updatedUser.id,
+    });
+
+    return {
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        isActive: updatedUser.isActive,
+        isPlatformAdmin: updatedUser.isPlatformAdmin,
+        mustChangePassword: updatedUser.mustChangePassword,
+        createdAt: updatedUser.createdAt.toISOString(),
+        updatedAt: updatedUser.updatedAt.toISOString(),
+      },
+      accessToken,
+      refreshToken,
     };
   }
 }

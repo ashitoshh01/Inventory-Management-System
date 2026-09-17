@@ -58,13 +58,14 @@ describe('AdminUsersService (Unit)', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should create user, hash password and log audit event', async () => {
+    it('should create user, hash password and log audit event with mustChangePassword: true', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockResolvedValue({
         id: 'new-user-id',
         email: 'new@example.com',
         isActive: true,
         isPlatformAdmin: false,
+        mustChangePassword: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -76,6 +77,14 @@ describe('AdminUsersService (Unit)', () => {
 
       expect(result.id).toBe('new-user-id');
       expect(result.email).toBe('new@example.com');
+      expect(result.mustChangePassword).toBe(true);
+      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            mustChangePassword: true,
+          }),
+        }),
+      );
       expect(mockAudit.logEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'user.create',

@@ -29,6 +29,8 @@ describe('TransfersController (Unit)', () => {
     email: 'user@example.com',
     passwordHash: 'hash',
     isActive: true,
+    isPlatformAdmin: false,
+    mustChangePassword: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

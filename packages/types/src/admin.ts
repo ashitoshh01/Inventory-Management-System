@@ -59,6 +59,7 @@ export interface AdminUserListItem {
   email: string;
   isActive: boolean;
   isPlatformAdmin: boolean;
+  mustChangePassword: boolean;
   membershipCount: number;
   createdAt: string;
   updatedAt: string;

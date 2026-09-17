@@ -15,7 +15,7 @@ import { Response, Request } from 'express';
 
 import { AuthService } from './auth.service';
 
-import { LoginDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto } from './dto/auth.dto';
 
 import {
   LoginResponse,
@@ -25,6 +25,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AllowPasswordChangePending } from '../../common/decorators/allow-password-change-pending.decorator';
 
 import {
   AuthRateLimitGuard,
@@ -123,6 +124,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   @UseGuards(JwtAuthGuard)
+  @AllowPasswordChangePending()
   async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -145,11 +147,45 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  @AllowPasswordChangePending()
   async getMe(
     @CurrentUser() user: { id: string },
   ): Promise<AuthMeResponse> {
     const result = await this.authService.getMe(user.id);
 
     return result;
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @AllowPasswordChangePending()
+  async changePassword(
+    @CurrentUser() user: { id: string },
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.changePassword(user.id, dto);
+
+    const isSecure =
+      process.env.COOKIE_SECURE === 'true' ||
+      process.env.NODE_ENV === 'production';
+    const sameSite = isSecure ? 'none' : 'lax';
+
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { success: true, user: result.user };
   }
 }

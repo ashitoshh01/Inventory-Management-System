@@ -44,6 +44,8 @@ describe('PurchaseOrdersController (Unit)', () => {
     email: 'user@example.com',
     passwordHash: 'hashed-pw',
     isActive: true,
+    isPlatformAdmin: false,
+    mustChangePassword: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

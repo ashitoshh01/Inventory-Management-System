@@ -23,6 +23,18 @@ describe('AuthController', () => {
       refreshSession: jest.fn(),
       logout: jest.fn(),
       getMe: jest.fn(),
+      changePassword: jest.fn().mockResolvedValue({
+        user: {
+          id: 'user-1',
+          email: 'test@example.com',
+          isActive: true,
+          mustChangePassword: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      }),
     };
 
     // Directly instantiate the controller to avoid NestJS DI resolution issues
@@ -87,6 +99,38 @@ describe('AuthController', () => {
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'refreshToken',
         'mock-refresh-token',
+        expect.objectContaining({ httpOnly: true }),
+      );
+    });
+  });
+
+  describe('POST /auth/change-password', () => {
+    it('should call AuthService.changePassword() and return success with user and updated cookies', async () => {
+      const mockRes = {
+        cookie: jest.fn(),
+      } as any;
+
+      const dto = {
+        currentPassword: 'CurrentPassword123!',
+        newPassword: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      };
+
+      const result = await controller.changePassword({ id: 'user-1' }, dto, mockRes);
+
+      expect(authService.changePassword).toHaveBeenCalledWith('user-1', dto);
+      expect(result.success).toBe(true);
+      expect(result.user.email).toBe('test@example.com');
+      expect(result.user.mustChangePassword).toBe(false);
+
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'accessToken',
+        'new-access-token',
+        expect.objectContaining({ httpOnly: true }),
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'refreshToken',
+        'new-refresh-token',
         expect.objectContaining({ httpOnly: true }),
       );
     });

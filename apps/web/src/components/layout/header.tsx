@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, Bell, LogOut, ChevronDown, Building, ShieldCheck } from 'lucide-react';
+import { Menu, Search, Bell, LogOut, ChevronDown, Building, ShieldCheck, User } from 'lucide-react';
 import { cn } from '@repo/ui';
 import { useAuth } from '../providers/AuthProvider';
 
@@ -186,6 +186,20 @@ export function Header({ className, onMenuClick, searchValue, onSearchChange }: 
                   </button>
                 </div>
               )}
+
+              <div className="border-t border-slate-100 py-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    router.push('/profile');
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <User className="h-4 w-4 text-slate-500" />
+                  My Profile
+                </button>
+              </div>
 
               <div className="border-t border-slate-100 py-1">
                 <button

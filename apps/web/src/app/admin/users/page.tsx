@@ -156,14 +156,24 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {u.isPlatformAdmin ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-                          <ShieldCheck className="h-3 w-3" />
-                          Platform Admin
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 font-medium">Standard User</span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {u.isPlatformAdmin ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                            <ShieldCheck className="h-3 w-3" />
+                            Platform Admin
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 font-medium text-xs">Standard User</span>
+                        )}
+                        {u.mustChangePassword && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200"
+                            title="User must change their temporary password on next login"
+                          >
+                            Password Change Pending
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">

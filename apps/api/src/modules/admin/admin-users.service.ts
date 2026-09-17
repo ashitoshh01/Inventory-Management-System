@@ -60,6 +60,7 @@ export class AdminUsersService {
       email: user.email,
       isActive: user.isActive,
       isPlatformAdmin: user.isPlatformAdmin,
+      mustChangePassword: user.mustChangePassword,
       membershipCount: user._count.memberships,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
@@ -110,6 +111,7 @@ export class AdminUsersService {
       email: user.email,
       isActive: user.isActive,
       isPlatformAdmin: user.isPlatformAdmin,
+      mustChangePassword: user.mustChangePassword,
       membershipCount: user._count.memberships,
       memberships,
       createdAt: user.createdAt.toISOString(),
@@ -140,6 +142,7 @@ export class AdminUsersService {
           email,
           passwordHash,
           isActive: true,
+          mustChangePassword: true,
         },
       });
 
@@ -196,6 +199,7 @@ export class AdminUsersService {
       email: user.email,
       isActive: user.isActive,
       isPlatformAdmin: user.isPlatformAdmin,
+      mustChangePassword: user.mustChangePassword,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };
