@@ -11,12 +11,14 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'IMS - Enterprise Inventory Management System',
-    template: '%s | IMS',
+    default: 'StockMinistry.com',
+    template: '%s | StockMinistry.com',
   },
   description:
     'Real-time enterprise inventory tracking, warehouse logistics, stock replenishment, and multi-warehouse operations management.',
   keywords: [
+    'StockMinistry',
+    'StockMinistry.com',
     'inventory management system',
     'warehouse management',
     'stock tracking',
@@ -24,9 +26,18 @@ export const metadata: Metadata = {
     'supply chain management',
     'purchase order management',
   ],
-  authors: [{ name: 'Inventory Management Team' }],
-  creator: 'Inventory Management System',
-  publisher: 'Inventory Management System',
+  authors: [{ name: 'StockMinistry Team' }],
+  creator: 'StockMinistry.com',
+  publisher: 'StockMinistry.com',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/logo-icon.png', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/favicon.ico',
+  },
   robots: {
     index: true,
     follow: true,
@@ -42,19 +53,28 @@ export const metadata: Metadata = {
     google: 'googleae0d1329484761a5',
   },
   openGraph: {
-    title: 'IMS - Enterprise Inventory Management System',
+    title: 'StockMinistry.com',
     description:
       'Real-time enterprise inventory tracking, warehouse logistics, stock replenishment, and multi-warehouse operations management.',
     url: siteUrl,
-    siteName: 'Inventory Management System',
+    siteName: 'StockMinistry.com',
     locale: 'en_US',
     type: 'website',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1024,
+        height: 559,
+        alt: 'StockMinistry.com',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IMS - Enterprise Inventory Management System',
+    title: 'StockMinistry.com',
     description:
       'Real-time enterprise inventory tracking, warehouse logistics, and multi-warehouse management.',
+    images: ['/logo.png'],
   },
 };
 

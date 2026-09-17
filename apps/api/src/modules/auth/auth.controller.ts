@@ -57,18 +57,19 @@ export class AuthController {
     const isSecure =
       process.env.COOKIE_SECURE === 'true' ||
       process.env.NODE_ENV === 'production';
+    const sameSite = isSecure ? 'none' : 'lax';
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'none',
+      sameSite,
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: isSecure,
-      sameSite: 'none',
+      sameSite,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -85,31 +86,32 @@ export class AuthController {
   ) {
     const token = req.cookies?.['refreshToken'];
 
+    const isSecure =
+      process.env.COOKIE_SECURE === 'true' ||
+      process.env.NODE_ENV === 'production';
+    const sameSite = isSecure ? 'none' : 'lax';
+
     try {
       const result = await this.authService.refreshSession(token);
-
-      const isSecure =
-        process.env.COOKIE_SECURE === 'true' ||
-        process.env.NODE_ENV === 'production';
 
       res.cookie('accessToken', result.accessToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'none',
+        sameSite,
         maxAge: 15 * 60 * 1000,
       });
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: isSecure,
-        sameSite: 'none',
+        sameSite,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
       return { user: result.user };
     } catch (err) {
-      res.clearCookie('accessToken');
-      res.clearCookie('refreshToken');
+      res.clearCookie('accessToken', { httpOnly: true, secure: isSecure, sameSite });
+      res.clearCookie('refreshToken', { httpOnly: true, secure: isSecure, sameSite });
 
       throw err;
     }
@@ -127,8 +129,13 @@ export class AuthController {
 
     await this.authService.logout(user.id, refreshToken);
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const isSecure =
+      process.env.COOKIE_SECURE === 'true' ||
+      process.env.NODE_ENV === 'production';
+    const sameSite = isSecure ? 'none' : 'lax';
+
+    res.clearCookie('accessToken', { httpOnly: true, secure: isSecure, sameSite });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: isSecure, sameSite });
 
     return { success: true };
   }

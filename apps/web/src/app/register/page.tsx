@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../components/providers/AuthProvider';
 
@@ -33,8 +34,19 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-sm">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <div className="flex flex-col items-center justify-center">
+          <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-slate-900">
+            <Image
+              src="/logo-icon.png"
+              alt="StockMinistry.com logo"
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+              priority
+            />
+          </div>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">StockMinistry.com</h1>
+          <h2 className="mt-1 text-center text-sm text-slate-500">
             Create an account
           </h2>
         </div>

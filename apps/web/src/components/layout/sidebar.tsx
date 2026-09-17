@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -184,19 +185,31 @@ export function Sidebar({
       >
         {/* Logo area */}
         <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
-            <Boxes className="h-5 w-5 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div className="min-w-0">
-              <h1 className="truncate text-[15px] font-bold text-white">IMS</h1>
-              <p className="truncate text-[11px] text-slate-400">Inventory Management</p>
+          <Link href="/" className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-slate-900 shadow-md">
+              <Image
+                src="/logo-icon.png"
+                alt="StockMinistry.com logo"
+                width={40}
+                height={40}
+                className="h-full w-full object-cover"
+                priority
+              />
             </div>
-          )}
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <h1 className="truncate text-[15px] font-bold tracking-tight text-white">
+                  StockMinistry.com
+                </h1>
+                <p className="truncate text-[11px] text-slate-400">Inventory Management</p>
+              </div>
+            )}
+          </Link>
           {/* Mobile close button */}
           <button
             onClick={onMobileClose}
             className="ml-auto rounded-md p-1 text-slate-400 hover:text-white lg:hidden"
+            aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
           </button>
