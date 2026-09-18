@@ -7,6 +7,7 @@ import { StructuredLogger } from '../src/common/logger/structured-logger.service
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from '../src/common/interceptors/logging.interceptor';
+import { WorkerModule } from '../src/modules/worker/worker.module';
 import { LowStockProcessor } from '../src/modules/worker/low-stock.processor';
 import { ReportExportProcessor } from '../src/modules/worker/report-export.processor';
 import { JOB_CHECK_LOW_STOCK, JOB_PROCESS_REPORT_EXPORT } from '../src/modules/queue/queue.constants';
@@ -50,7 +51,7 @@ describe('Notifications & Background Jobs Integration Tests', () => {
     process.env.COOKIE_SECURE = 'true';
     const logger = new StructuredLogger();
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule, WorkerModule],
     }).compile();
 
     app = moduleFixture.createNestApplication({ logger });

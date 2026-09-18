@@ -28,7 +28,17 @@ export class HealthService implements OnModuleDestroy {
     @Optional() private readonly storageService?: StorageService,
   ) {}
 
+  private redisProbeClient: Redis | null = null;
+
   onModuleDestroy(): void {
+    if (this.redisProbeClient) {
+      try {
+        this.redisProbeClient.disconnect();
+      } catch {
+        // ignore
+      }
+      this.redisProbeClient = null;
+    }
     this.logger.log('HealthService shutting down cleanly', 'HealthService');
   }
 
@@ -57,16 +67,23 @@ export class HealthService implements OnModuleDestroy {
       );
     }
 
-    // 2. Probe Redis with timeout and guaranteed cleanup
-    let redisClient: Redis | null = null;
+    // 2. Probe Redis using reusable cached client
     try {
-      redisClient = new Redis(redisUrl, {
-        connectTimeout: 3000,
-        maxRetriesPerRequest: 1,
-        lazyConnect: true,
-      });
-      await redisClient.connect();
-      const pong = await redisClient.ping();
+      if (!this.redisProbeClient) {
+        this.redisProbeClient = new Redis(redisUrl, {
+          connectTimeout: 3000,
+          maxRetriesPerRequest: 1,
+          lazyConnect: true,
+          enableOfflineQueue: false,
+        });
+      }
+      if (
+        this.redisProbeClient.status !== 'ready' &&
+        this.redisProbeClient.status !== 'connecting'
+      ) {
+        await this.redisProbeClient.connect();
+      }
+      const pong = await this.redisProbeClient.ping();
       if (pong === 'PONG') {
         redisStatus = 'up';
       }
@@ -75,14 +92,12 @@ export class HealthService implements OnModuleDestroy {
         `Redis health probe failed: ${err instanceof Error ? err.message : String(err)}`,
         'HealthService',
       );
-    } finally {
-      if (redisClient) {
-        try {
-          redisClient.disconnect();
-        } catch {
-          // ignore cleanup error
-        }
+      try {
+        this.redisProbeClient?.disconnect();
+      } catch {
+        // ignore
       }
+      this.redisProbeClient = null;
     }
 
     // 3. Probe Storage (Cloudinary) if configured

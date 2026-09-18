@@ -15,12 +15,22 @@ export function parseRedisConnection(redisUrlStr: string) {
       password: url.password || undefined,
       tls: isTls ? {} : undefined,
       maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      connectTimeout: 10000,
+      retryStrategy(times: number) {
+        return Math.min(times * 1000, 10000);
+      },
     };
   } catch {
     return {
       host: 'localhost',
       port: 6379,
       maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      connectTimeout: 10000,
+      retryStrategy(times: number) {
+        return Math.min(times * 1000, 10000);
+      },
     };
   }
 }

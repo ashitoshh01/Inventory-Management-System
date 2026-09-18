@@ -11,11 +11,13 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
   const logger = new StructuredLogger();
+  logger.log(`Starting Inventory API bootstrap in ${process.env.NODE_ENV || 'development'} mode...`, 'Bootstrap');
 
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
     logger,
   });
+  app.useLogger(logger);
 
   // 1. Security Headers via Helmet
   app.use(helmet());
@@ -100,6 +102,7 @@ async function bootstrap(): Promise<void> {
   });
 
   const port = parseInt(process.env.PORT || '4000', 10);
+  logger.log(`Attempting to bind HTTP server to 0.0.0.0:${port}...`, 'Bootstrap');
   await app.listen(port, '0.0.0.0');
 
   logger.log(
@@ -113,6 +116,7 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((err) => {
+  console.error('FATAL BOOTSTRAP ERROR:', err);
   const logger = new StructuredLogger();
   logger.error(
     `Fatal error during application bootstrap: ${err instanceof Error ? err.message : String(err)}`,

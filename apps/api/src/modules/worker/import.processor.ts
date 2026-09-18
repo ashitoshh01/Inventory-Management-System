@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import * as fs from 'fs';
 import { PrismaService, Prisma } from '@repo/database';
@@ -11,11 +11,19 @@ import { StockMutationService } from '../stock/stock-mutation.service';
 import { AuditService } from '../audit/audit.service';
 import { ProductValidator } from '../products/products.validator';
 import { WarehouseValidator } from '../warehouses/warehouses.validator';
+import { WorkerCircuitBreaker } from './worker-backoff.helper';
 
-@Processor(QUEUE_IMPORT)
+@Processor(QUEUE_IMPORT, {
+  concurrency: 1, // Database-transaction bound; serialize to prevent row-level stock balance lock contention
+  drainDelay: 10, // 10s idle block ceiling
+  stalledInterval: 60000, // Check stalled jobs once per minute
+  maxStalledCount: 2,
+  lockDuration: 30000,
+})
 @Injectable()
-export class ImportProcessor extends WorkerHost {
+export class ImportProcessor extends WorkerHost implements OnModuleDestroy {
   private readonly logger = new Logger(ImportProcessor.name);
+  private readonly circuitBreaker = new WorkerCircuitBreaker(ImportProcessor.name, this.logger);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -25,7 +33,17 @@ export class ImportProcessor extends WorkerHost {
     super();
   }
 
+  onModuleDestroy(): void {
+    this.circuitBreaker.cleanup();
+  }
+
+  @OnWorkerEvent('error')
+  async onError(err: Error): Promise<void> {
+    await this.circuitBreaker.handleError(this.worker, err);
+  }
+
   async process(job: Job<ImportJobPayload>): Promise<{ success: boolean; importId: string }> {
+    this.circuitBreaker.reset();
     if (job.name !== JOB_PROCESS_IMPORT) {
       this.logger.warn(`Unknown job name: ${job.name}`);
       return { success: false, importId: job.data.importId };

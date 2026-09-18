@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: inventory-api
+    runtime: node
+    plan: starter
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @repo/database prisma:migrate:deploy && pnpm --filter @repo/api... build
+    startCommand: pnpm --filter @repo/api start:prod
+    healthCheckPath: /health/liveness
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  - type: worker
+    name: inventory-worker
+    runtime: node
+    plan: starter
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @repo/api... build
+    startCommand: pnpm --filter @repo/api start:worker:prod
+    envVars:
+      - key: NODE_ENV
+        value: production

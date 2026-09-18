@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,13 +10,21 @@ import { QUEUE_REPORT_EXPORT, JOB_PROCESS_REPORT_EXPORT } from '../queue/queue.c
 import { ReportsService } from '../reports/reports.service';
 import { ExportReportDto } from '../reports/dto/reports-query.dto';
 import { EXPORTS_STORAGE_DIR } from '../reports/reports.constants';
+import { WorkerCircuitBreaker } from './worker-backoff.helper';
 
 export { EXPORTS_STORAGE_DIR };
 
-@Processor(QUEUE_REPORT_EXPORT)
+@Processor(QUEUE_REPORT_EXPORT, {
+  concurrency: 1, // CPU/memory bound CSV serialization; serialize to prevent memory spikes
+  drainDelay: 10, // 10s idle block ceiling
+  stalledInterval: 60000, // Check stalled jobs once per minute
+  maxStalledCount: 2,
+  lockDuration: 30000,
+})
 @Injectable()
-export class ReportExportProcessor extends WorkerHost {
+export class ReportExportProcessor extends WorkerHost implements OnModuleDestroy {
   private readonly logger = new Logger(ReportExportProcessor.name);
+  private readonly circuitBreaker = new WorkerCircuitBreaker(ReportExportProcessor.name, this.logger);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -29,11 +37,21 @@ export class ReportExportProcessor extends WorkerHost {
         fs.mkdirSync(EXPORTS_STORAGE_DIR, { recursive: true });
       }
     } catch (err) {
-      this.logger.error(`Failed to initialize storage directory ${EXPORTS_STORAGE_DIR}`, err);
+      this.logger.error(`Failed to create export storage directory: ${(err as Error).message}`);
     }
   }
 
+  onModuleDestroy(): void {
+    this.circuitBreaker.cleanup();
+  }
+
+  @OnWorkerEvent('error')
+  async onError(err: Error): Promise<void> {
+    await this.circuitBreaker.handleError(this.worker, err);
+  }
+
   async process(job: Job<ReportExportJobPayload>): Promise<{ success: boolean; exportId: string }> {
+    this.circuitBreaker.reset();
     if (job.name !== JOB_PROCESS_REPORT_EXPORT) {
       this.logger.warn(`Unknown job name: ${job.name}`);
       return { success: false, exportId: job.data.exportId };
@@ -61,7 +79,7 @@ export class ReportExportProcessor extends WorkerHost {
     try {
       // 1. Authoritative generation via ReportsService
       const exportDto = plainToInstance(ExportReportDto, {
-        reportType: reportType as any,
+        reportType: reportType as ExportReportDto['reportType'],
         ...(queryParams ?? {}),
       });
 

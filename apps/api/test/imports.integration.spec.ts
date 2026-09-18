@@ -8,6 +8,7 @@ import { StructuredLogger } from '../src/common/logger/structured-logger.service
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from '../src/common/interceptors/logging.interceptor';
+import { WorkerModule } from '../src/modules/worker/worker.module';
 import { ImportProcessor } from '../src/modules/worker/import.processor';
 import { JOB_PROCESS_IMPORT } from '../src/modules/queue/queue.constants';
 import { Job } from 'bullmq';
@@ -48,7 +49,7 @@ describe('Imports & Bulk Operations Integration Suite', () => {
     process.env.COOKIE_SECURE = 'true';
     const logger = new StructuredLogger();
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule, WorkerModule],
     }).compile();
 
     app = moduleFixture.createNestApplication({ logger });

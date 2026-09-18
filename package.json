@@ -10,6 +10,11 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "worker:dev": "pnpm --filter @repo/api dev:worker",
+    "start": "pnpm --filter @repo/api start:prod",
+    "start:api": "pnpm --filter @repo/api start:prod",
+    "start:worker": "pnpm --filter @repo/api start:worker:prod",
+    "start:web": "pnpm --filter @repo/web start",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",

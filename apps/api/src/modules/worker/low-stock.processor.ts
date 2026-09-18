@@ -1,22 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaService } from '@repo/database';
 import type { LowStockCheckJobPayload } from '@repo/types';
 import { QUEUE_LOW_STOCK, JOB_CHECK_LOW_STOCK } from '../queue/queue.constants';
+import { WorkerCircuitBreaker } from './worker-backoff.helper';
 
 const LOW_STOCK_THRESHOLD = 10;
 
-@Processor(QUEUE_LOW_STOCK)
+@Processor(QUEUE_LOW_STOCK, {
+  concurrency: 2, // Lightweight I/O bound queries; concurrency 2 handles bursts safely
+  drainDelay: 10, // 10s idle block ceiling
+  stalledInterval: 60000, // Check stalled jobs once per minute
+  maxStalledCount: 2,
+  lockDuration: 30000,
+})
 @Injectable()
-export class LowStockProcessor extends WorkerHost {
+export class LowStockProcessor extends WorkerHost implements OnModuleDestroy {
   private readonly logger = new Logger(LowStockProcessor.name);
+  private readonly circuitBreaker = new WorkerCircuitBreaker(LowStockProcessor.name, this.logger);
 
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
+  onModuleDestroy(): void {
+    this.circuitBreaker.cleanup();
+  }
+
+  @OnWorkerEvent('error')
+  async onError(err: Error): Promise<void> {
+    await this.circuitBreaker.handleError(this.worker, err);
+  }
+
   async process(job: Job<LowStockCheckJobPayload>): Promise<{ success: boolean; action: string }> {
+    this.circuitBreaker.reset();
     if (job.name !== JOB_CHECK_LOW_STOCK) {
       this.logger.warn(`Unknown job name: ${job.name}`);
       return { success: false, action: 'unknown_job' };
